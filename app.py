@@ -56,6 +56,11 @@ NEW_API_SESSION_COOKIE = os.environ.get("NEW_API_SESSION_COOKIE", "")
 
 _paypal_token = {"access_token": None, "expires_at":0}
 
+# v6 c-path: New API QuotaPerUnit (default 500_000 = 1 USD). Fetched at startup
+# from /api/option/?key=QuotaPerUnit with the admin session cookie. Falls back
+# to 500_000 if fetch fails (no cookie / 401 / network).
+_quota_per_unit: int = 500_000
+
 app = FastAPI(title="TokenMaster v5 Webhook", version="v5")
 
 
@@ -73,7 +78,11 @@ def _startup() -> None:
         log.info("landing static mounted at /landing (dir=%s)", landing_dir)
     else:
         log.warning("landing dir not found at %s — /landing will 404", landing_dir)
-    log.info("webhook service ready v5")
+    # v6 c-path: fetch QuotaPerUnit for USD→quota conversion. Best-effort; on
+    # any failure (no cookie / 401 / network) we keep the 500_000 default.
+    global _quota_per_unit
+    _quota_per_unit = _fetch_quota_per_unit()
+    log.info("webhook service ready v5 (c-path QuotaPerUnit=%d)", _quota_per_unit)
 
 
 @app.get("/")
@@ -307,9 +316,21 @@ async def paypal_webhook(request: Request) -> JSONResponse:
         return JSONResponse({"status": "no-matching-order", "paypal_id": pp_id})
 
     if event_type == "PAYMENT.CAPTURE.COMPLETED":
-        code = _mint_redemption_code(order)
-        db.mark_paid(order["id"], code)
-        log.info("paypal order %s paid -> code %s", order["id"], (code[:8] + "***") if code else "<empty>")
+        # v6 c-path: grant quota directly to user's New API account.
+        # Replaces b-path (mint redemption code) per L1 2026-06-09 decision.
+        marker = _grant_quota_via_admin_api(order)
+        if marker is None:
+            # c-path failed (no cookie, 401, user lookup miss, or New API
+            # PUT error). Mark the order failed and return 500 to PayPal
+            # so it retries the webhook per its own retry policy.
+            db.mark_failed(order["id"], reason="c-path:admin-api-failed")
+            log.error("paypal order %s c-path failed -> 500 to paypal for retry", order["id"])
+            return JSONResponse(
+                {"status": "c-path-failed", "order_id": order["id"]},
+                status_code=500,
+            )
+        db.mark_paid(order["id"], marker)
+        log.info("paypal order %s paid via c-path -> %s", order["id"], marker)
 
     return JSONResponse({"status": "ok", "order_id": order["id"], "event_type": event_type})
 
@@ -389,6 +410,118 @@ def _mint_redemption_code(order: dict) -> str:
     except ValueError as e:
         log.error("Bad SKU on order %s: %s", order["id"], e)
         return f"TM-FALLBACK-{uuid.uuid4().hex[:10].upper()}"
+
+
+# ── v6 c-path: direct quota grant via New API admin API ──────────────────
+
+
+def _fetch_quota_per_unit() -> int:
+    """Fetch New API QuotaPerUnit from /api/option/?key=QuotaPerUnit at startup.
+
+    New API default is 500_000 (1 USD = 500K quota, per
+    common/constants.go:62). The admin may override via the New API admin UI
+    (Settings → QuotaPerUnit), so we read live value rather than hard-coding.
+    Falls back to 500_000 on any error (no cookie, 401, network, parse).
+    """
+    if not NEW_API_SESSION_COOKIE:
+        log.warning("QuotaPerUnit fetch skipped: NEW_API_SESSION_COOKIE empty")
+        return 500_000
+    try:
+        r = requests.get(
+            f"{NEW_API_BASE_URL}/api/option/",
+            params={"key": "QuotaPerUnit"},
+            headers={
+                "Cookie": f"session={NEW_API_SESSION_COOKIE}",
+                "New-Api-User": "1",
+                "Accept": "application/json",
+            },
+            timeout=10,
+        )
+        r.raise_for_status()
+        body = r.json()
+        # New API v1.0.0-rc.10 shape: {"success": true, "data": {"key": "QuotaPerUnit", "value": "500000"}}
+        # Some builds: {"data": [...]} array form
+        data = body.get("data")
+        if isinstance(data, list) and data:
+            data = data[0]
+        if isinstance(data, dict):
+            val = data.get("value")
+        else:
+            val = body.get("value")
+        if val is None or str(val).strip() == "":
+            log.warning("QuotaPerUnit fetch returned empty value: %s", body)
+            return 500_000
+        return int(float(val))
+    except Exception as e:
+        log.warning("QuotaPerUnit fetch failed (%s) — using default 500_000", e)
+        return 500_000
+
+
+def _grant_quota_via_admin_api(order: dict) -> str | None:
+    """v6 c-path: grant quota directly to the user's New API account.
+
+    Replaces b-path (mint redemption code) for the PayPal webhook. Looks up
+    the New API user_id by email via /api/user/?keyword=, then PUTs the
+    USD→quota delta to /api/user/self/?id={user_id}.
+
+    Returns a marker string for the orders.redemption_code column (audit), or
+    None on any failure. Caller should mark the order failed and return 500
+    to PayPal so the webhook retries.
+    """
+    email = order["email"]
+    usd = int(order["usd_amount"])
+    quota_to_add = usd * _quota_per_unit
+    if not NEW_API_SESSION_COOKIE:
+        log.error("c-path skip: NEW_API_SESSION_COOKIE empty for order %s", order["id"])
+        return None
+    try:
+        # Step 1: look up user_id by email
+        ur = requests.get(
+            f"{NEW_API_BASE_URL}/api/user/",
+            params={"keyword": email},
+            headers={
+                "Cookie": f"session={NEW_API_SESSION_COOKIE}",
+                "New-Api-User": "1",
+                "Accept": "application/json",
+            },
+            timeout=15,
+        )
+        ur.raise_for_status()
+        ubody = ur.json()
+        users = ubody.get("data")
+        if isinstance(users, dict):
+            users = [users]
+        if not isinstance(users, list):
+            users = []
+        user_id = None
+        for u in users:
+            if (u.get("email") or "").lower() == email.lower():
+                user_id = u.get("id")
+                break
+        if not user_id:
+            log.error("c-path: no New API user for email=%s (order %s)", email, order["id"])
+            return None
+        # Step 2: PUT quota delta
+        pr = requests.put(
+            f"{NEW_API_BASE_URL}/api/user/self/?id={user_id}",
+            headers={
+                "Cookie": f"session={NEW_API_SESSION_COOKIE}",
+                "New-Api-User": "1",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            json={"quota": quota_to_add},
+            timeout=15,
+        )
+        pr.raise_for_status()
+        log.info(
+            "PayPal webhook processed, user_id=%s, quota_added=%d, order_id=%s",
+            user_id, quota_to_add, order["id"],
+        )
+        return f"cpath:user={user_id},+{quota_to_add}"
+    except Exception as e:
+        log.exception("c-path grant failed for order %s: %s", order["id"], e)
+        return None
 
 
 # ── M3 test endpoint ─────────────────────────────────────────────────────
