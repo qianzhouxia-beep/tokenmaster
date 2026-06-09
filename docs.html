@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en" style="scroll-smooth">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Documentation — TokenMaster</title>
+<meta name="description" content="TokenMaster API documentation. Get started with one API key, 17+ AI models, 75% off OpenAI.">
+<!-- Fonts: Google with system fallback -->
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"></noscript>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<style>
+:root { --primary: #ab3500; --primary-container: #ff6b35; --surface: #fff8f6; --on-surface: #261814; --secondary: #5f5e5e; --outline-variant: #e1bfb5; --surface-container-low: #fff1ed; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--surface); color: var(--on-surface); line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
+header { background: var(--surface); border-bottom: 1px solid var(--outline-variant); position: sticky; top: 0; z-index: 50; backdrop-filter: blur(8px); }
+nav { max-width: 1200px; margin: 0 auto; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; }
+.logo { display: flex; align-items: center; gap: 8px; font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 20px; color: var(--on-surface); text-decoration: none; }
+.nav-links { display: flex; gap: 32px; }
+.nav-links a { color: var(--secondary); text-decoration: none; font-size: 16px; font-weight: 500; transition: color 0.2s; }
+.nav-links a:hover, .nav-links a.active { color: var(--primary); }
+.lang-toggle { display: flex; align-items: center; gap: 4px; padding: 6px 12px; border: 1px solid var(--outline-variant); border-radius: 9999px; background: transparent; color: var(--secondary); font-family: "JetBrains Mono", monospace; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+.lang-toggle:hover { border-color: var(--primary); color: var(--primary); }
+.cta-btn { background: var(--primary-container); color: #fff; padding: 8px 20px; border-radius: 6px; font-family: "JetBrains Mono", monospace; font-size: 14px; font-weight: 500; text-decoration: none; transition: all 0.2s; }
+.cta-btn:hover { background: var(--primary); }
+main { flex: 1; max-width: 900px; margin: 0 auto; padding: 64px 32px; width: 100%; }
+h1 { font-family: "Space Grotesk", sans-serif; font-size: 48px; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 16px; }
+.lead { font-size: 20px; color: var(--secondary); margin-bottom: 48px; }
+h2 { font-family: "Space Grotesk", sans-serif; font-size: 32px; font-weight: 600; line-height: 1.2; margin: 48px 0 16px; }
+h3 { font-family: "Space Grotesk", sans-serif; font-size: 24px; font-weight: 500; line-height: 1.3; margin: 32px 0 12px; }
+p { margin-bottom: 16px; color: var(--on-surface); }
+ul, ol { margin-bottom: 16px; padding-left: 24px; }
+li { margin-bottom: 8px; }
+code { font-family: "JetBrains Mono", monospace; font-size: 14px; background: var(--surface-container-low); padding: 2px 6px; border-radius: 4px; color: var(--primary); }
+pre { background: #1a1a1a; color: #fff; padding: 20px; border-radius: 8px; overflow-x: auto; margin: 16px 0 24px; }
+pre code { background: transparent; color: #fff; padding: 0; font-size: 14px; line-height: 1.6; }
+.callout { background: var(--surface-container-low); border-left: 4px solid var(--primary); padding: 16px 20px; border-radius: 4px; margin: 16px 0 24px; }
+.callout strong { color: var(--primary); }
+.toc { background: var(--surface-container-low); padding: 20px 24px; border-radius: 8px; margin-bottom: 32px; }
+.toc h4 { font-family: "JetBrains Mono", monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary); margin-bottom: 12px; }
+.toc ol { padding-left: 20px; }
+.toc a { color: var(--primary); text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--outline-variant); }
+th { font-family: "JetBrains Mono", monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary); }
+footer { background: var(--surface-container-low); border-top: 1px solid var(--outline-variant); padding: 32px; text-align: center; font-size: 14px; color: var(--secondary); }
+footer a { color: var(--primary); text-decoration: none; margin: 0 12px; }
+footer a:hover { text-decoration: underline; }
+.material-symbols-outlined { font-family: "Material Symbols Outlined", "Apple Color Emoji", "Segoe UI Emoji", sans-serif; font-weight: normal; font-style: normal; font-size: 18px; vertical-align: middle; }
+@media (max-width: 768px) { .nav-links { display: none; } h1 { font-size: 32px; } h2 { font-size: 24px; } main { padding: 32px 20px; } }
+</style>
+</head>
+<body>
+<header>
+<nav>
+<a class="logo" href="landing.html">
+<img src="assets/logo.png" alt="TokenMaster" style="height: 40px; width: auto; max-width: 200px; object-fit: contain; display: block;">
+TokenMaster
+</a>
+<div class="nav-links">
+<a href="landing.html#features">Features</a>
+<a href="landing.html#pricing">Pricing</a>
+<a href="landing.html#faq">FAQ</a>
+<a href="docs.html" class="active">Docs</a>
+</div>
+<div style="display: flex; align-items: center; gap: 12px;">
+<button class="lang-toggle" id="lang-toggle" type="button" aria-label="Switch language">
+<span class="material-symbols-outlined" style="font-size: 16px;">public</span>
+<span id="lang-toggle-label">EN</span>
+</button>
+<a class="cta-btn" href="landing.html">Get Tokens</a>
+</div>
+</nav>
+</header>
+<main>
+<h1 data-i18n="docs.h1">Documentation</h1>
+<p class="lead" data-i18n="docs.lead">Get up and running with TokenMaster in 3 minutes. One API key, 17+ AI models, 75% off OpenAI.</p>
+
+<div class="toc">
+<h4 data-i18n="docs.toc">On this page</h4>
+<ol>
+<li><a href="#quickstart" data-i18n="docs.toc1">Quickstart</a></li>
+<li><a href="#installation" data-i18n="docs.toc2">Installation</a></li>
+<li><a href="#authentication" data-i18n="docs.toc3">Authentication</a></li>
+<li><a href="#first-request" data-i18n="docs.toc4">Your first request</a></li>
+<li><a href="#models" data-i18n="docs.toc5">Choosing a model</a></li>
+<li><a href="#errors" data-i18n="docs.toc6">Errors &amp; rate limits</a></li>
+<li><a href="#next" data-i18n="docs.toc7">Next steps</a></li>
+</ol>
+</div>
+
+<h2 id="quickstart" data-i18n="docs.qs.h2">1. Quickstart</h2>
+<p data-i18n="docs.qs.p1">TokenMaster is a drop-in OpenAI-compatible API gateway. You get one master key that works across all 17+ supported models — GPT-4, Claude, Gemini, Zhipu GLM-4-Plus, DeepSeek, Qwen, Mistral, Llama 3, and more. No separate accounts needed.</p>
+<div class="callout"><strong data-i18n="docs.qs.tip">Tip:</strong> <span data-i18n="docs.qs.tiptext">If you've used the OpenAI SDK before, you already know 90% of TokenMaster. Just swap the base URL and API key.</span></div>
+
+<h2 id="installation" data-i18n="docs.inst.h2">2. Installation</h2>
+<p data-i18n="docs.inst.p1">Install the OpenAI SDK for your language of choice. TokenMaster speaks the exact same protocol.</p>
+<h3 data-i18n="docs.inst.h3a">Python</h3>
+<pre><code>pip install openai</code></pre>
+<h3 data-i18n="docs.inst.h3b">Node.js</h3>
+<pre><code>npm install openai</code></pre>
+<h3 data-i18n="docs.inst.h3c">cURL</h3>
+<p data-i18n="docs.inst.curl">No install needed. TokenMaster works with any HTTP client.</p>
+
+<h2 id="authentication" data-i18n="docs.auth.h2">3. Authentication</h2>
+<p data-i18n="docs.auth.p1">All requests authenticate with a Bearer token. After purchase, you'll receive your master key via email.</p>
+<pre><code>Authorization: Bearer TM-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</code></pre>
+<div class="callout"><strong data-i18n="docs.auth.warn">Keep it secret:</strong> <span data-i18n="docs.auth.warntext">Never expose your key in client-side code or public repos. Use a backend proxy for production apps.</span></div>
+
+<h2 id="first-request" data-i18n="docs.fr.h2">4. Your first request</h2>
+<p data-i18n="docs.fr.p1">Point your OpenAI SDK to TokenMaster's base URL and send a chat completion:</p>
+<h3 data-i18n="docs.fr.h3a">Python</h3>
+<pre><code>from openai import OpenAI
+
+client = OpenAI(
+    api_key="TM-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+    base_url="https://api-tokenmaster.com/v1"
+)
+
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "Hello, world!"}]
+)
+print(response.choices[0].message.content)</code></pre>
+<h3 data-i18n="docs.fr.h3b">Node.js</h3>
+<pre><code>import OpenAI from 'openai';
+
+const client = new OpenAI({
+  apiKey: 'TM-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+  baseURL: 'https://api-tokenmaster.com/v1'
+});
+
+const response = await client.chat.completions.create({
+  model: 'gpt-4o',
+  messages: [{ role: 'user', content: 'Hello, world!' }]
+});
+console.log(response.choices[0].message.content);</code></pre>
+<h3 data-i18n="docs.fr.h3c">cURL</h3>
+<pre><code>curl https://api-tokenmaster.com/v1/chat/completions \
+  -H "Authorization: Bearer TM-xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4o",
+    "messages": [{"role": "user", "content": "Hello, world!"}]
+  }'</code></pre>
+
+<h2 id="models" data-i18n="docs.m.h2">5. Choosing a model</h2>
+<p data-i18n="docs.m.p1">Pass any of the 17+ supported model ids in the <code>model</code> field. See the full list at <a href="models.html" data-i18n="docs.m.link">/models</a>.</p>
+<table>
+<thead><tr><th data-i18n="docs.m.t.model">Model</th><th data-i18n="docs.m.t.use">Best for</th><th data-i18n="docs.m.t.id">Model id</th></tr></thead>
+<tbody>
+<tr><td>GPT-4o</td><td data-i18n="docs.m.row1">General reasoning, code</td><td><code>gpt-4o</code></td></tr>
+<tr><td>Claude 3.5 Sonnet</td><td data-i18n="docs.m.row2">Long context, code review</td><td><code>claude-3-5-sonnet</code></td></tr>
+<tr><td>Gemini Pro 1.5</td><td data-i18n="docs.m.row3">Vision, long context</td><td><code>gemini-pro-1.5</code></td></tr>
+<tr><td>Zhipu GLM-4-Plus</td><td data-i18n="docs.m.row4">Chinese, low cost (24M+ free)</td><td><code>glm-4-plus</code></td></tr>
+<tr><td>DeepSeek-V3</td><td data-i18n="docs.m.row5">Reasoning, math, code</td><td><code>deepseek-v3</code></td></tr>
+<tr><td>Qwen-Max</td><td data-i18n="docs.m.row6">Chinese, multimodal</td><td><code>qwen-max</code></td></tr>
+</tbody>
+</table>
+
+<h2 id="errors" data-i18n="docs.e.h2">6. Errors &amp; rate limits</h2>
+<p data-i18n="docs.e.p1">TokenMaster returns standard HTTP status codes:</p>
+<table>
+<thead><tr><th data-i18n="docs.e.t.code">Code</th><th data-i18n="docs.e.t.mean">Meaning</th><th data-i18n="docs.e.t.fix">Fix</th></tr></thead>
+<tbody>
+<tr><td><code>401</code></td><td data-i18n="docs.e.r1">Invalid or expired key</td><td data-i18n="docs.e.r1f">Check your key, contact support if persistent</td></tr>
+<tr><td><code>402</code></td><td data-i18n="docs.e.r2">Insufficient tokens</td><td data-i18n="docs.e.r2f">Buy more at <a href="landing.html#pricing">Pricing</a></td></tr>
+<tr><td><code>429</code></td><td data-i18n="docs.e.r3">Rate limit exceeded</td><td data-i18n="docs.e.r3f">Reduce concurrency, upgrade to Pro for higher limits</td></tr>
+<tr><td><code>500+</code></td><td data-i18n="docs.e.r4">Upstream provider error</td><td data-i18n="docs.e.r4f">Retry with exponential backoff</td></tr>
+</tbody>
+</table>
+
+<h2 id="next" data-i18n="docs.n.h2">7. Next steps</h2>
+<ul>
+<li data-i18n="docs.n.l1"><strong>Browse all models</strong> — <a href="models.html">/models</a></li>
+<li data-i18n="docs.n.l2"><strong>Full API reference</strong> — <a href="docs-api.html">/docs/api</a></li>
+<li data-i18n="docs.n.l3"><strong>Get a key</strong> — <a href="landing.html#pricing">Pricing</a></li>
+<li data-i18n="docs.n.l4"><strong>Contact support</strong> — <a href="contact.html">/contact</a></li>
+</ul>
+
+</main>
+<footer>
+<div>
+<a href="landing.html">Home</a>
+<a href="docs.html">Docs</a>
+<a href="docs-api.html">API Ref</a>
+<a href="models.html">Models</a>
+<a href="about.html">About</a>
+<a href="contact.html">Contact</a>
+<a href="privacy.html">Privacy</a>
+<a href="terms.html">Terms</a>
+</div>
+<div style="margin-top: 16px; font-size: 12px;">&copy; 2026 TokenMaster AI. All rights reserved.</div>
+</footer>
+<script>
+const I18N = {
+    en: {
+        'docs.h1': 'Documentation',
+        'docs.lead': 'Get up and running with TokenMaster in 3 minutes. One API key, 17+ AI models, 75% off OpenAI.',
+        'docs.toc': 'On this page',
+        'docs.toc1': 'Quickstart', 'docs.toc2': 'Installation', 'docs.toc3': 'Authentication',
+        'docs.toc4': 'Your first request', 'docs.toc5': 'Choosing a model', 'docs.toc6': 'Errors & rate limits', 'docs.toc7': 'Next steps',
+        'docs.qs.h2': '1. Quickstart',
+        'docs.qs.p1': 'TokenMaster is a drop-in OpenAI-compatible API gateway. You get one master key that works across all 17+ supported models \u2014 GPT-4, Claude, Gemini, Zhipu GLM-4-Plus, DeepSeek, Qwen, Mistral, Llama 3, and more. No separate accounts needed.',
+        'docs.qs.tip': 'Tip:', 'docs.qs.tiptext': "If you've used the OpenAI SDK before, you already know 90% of TokenMaster. Just swap the base URL and API key.",
+        'docs.inst.h2': '2. Installation',
+        'docs.inst.p1': 'Install the OpenAI SDK for your language of choice. TokenMaster speaks the exact same protocol.',
+        'docs.inst.h3a': 'Python', 'docs.inst.h3b': 'Node.js', 'docs.inst.curl': 'No install needed. TokenMaster works with any HTTP client.',
+        'docs.auth.h2': '3. Authentication',
+        'docs.auth.p1': 'All requests authenticate with a Bearer token. After purchase, you\u2019ll receive your master key via email.',
+        'docs.auth.warn': 'Keep it secret:', 'docs.auth.warntext': 'Never expose your key in client-side code or public repos. Use a backend proxy for production apps.',
+        'docs.fr.h2': '4. Your first request',
+        'docs.fr.p1': 'Point your OpenAI SDK to TokenMaster\u2019s base URL and send a chat completion:',
+        'docs.fr.h3a': 'Python', 'docs.fr.h3b': 'Node.js', 'docs.fr.h3c': 'cURL',
+        'docs.m.h2': '5. Choosing a model',
+        'docs.m.p1': 'Pass any of the 17+ supported model ids in the model field. See the full list at', 'docs.m.link': '/models',
+        'docs.m.t.model': 'Model', 'docs.m.t.use': 'Best for', 'docs.m.t.id': 'Model id',
+        'docs.m.row1': 'General reasoning, code', 'docs.m.row2': 'Long context, code review', 'docs.m.row3': 'Vision, long context',
+        'docs.m.row4': 'Chinese, low cost (24M+ free)', 'docs.m.row5': 'Reasoning, math, code', 'docs.m.row6': 'Chinese, multimodal',
+        'docs.e.h2': '6. Errors & rate limits',
+        'docs.e.p1': 'TokenMaster returns standard HTTP status codes:',
+        'docs.e.t.code': 'Code', 'docs.e.t.mean': 'Meaning', 'docs.e.t.fix': 'Fix',
+        'docs.e.r1': 'Invalid or expired key', 'docs.e.r1f': 'Check your key, contact support if persistent',
+        'docs.e.r2': 'Insufficient tokens', 'docs.e.r2f': 'Buy more at Pricing',
+        'docs.e.r3': 'Rate limit exceeded', 'docs.e.r3f': 'Reduce concurrency, upgrade to Pro for higher limits',
+        'docs.e.r4': 'Upstream provider error', 'docs.e.r4f': 'Retry with exponential backoff',
+        'docs.n.h2': '7. Next steps',
+        'docs.n.l1': 'Browse all models \u2014 /models',
+        'docs.n.l2': 'Full API reference \u2014 /docs/api',
+        'docs.n.l3': 'Get a key \u2014 Pricing',
+        'docs.n.l4': 'Contact support \u2014 /contact'
+    },
+    zh: {
+        'docs.h1': '使用文档',
+        'docs.lead': '3 分钟上手 TokenMaster。一个 API 密钥,17+ AI 模型,比 OpenAI 便宜 75%。',
+        'docs.toc': '本页目录',
+        'docs.toc1': '快速开始', 'docs.toc2': '安装', 'docs.toc3': '身份认证',
+        'docs.toc4': '第一个请求', 'docs.toc5': '选择模型', 'docs.toc6': '错误与限流', 'docs.toc7': '下一步',
+        'docs.qs.h2': '1. 快速开始',
+        'docs.qs.p1': 'TokenMaster 是即插即用的 OpenAI 兼容 API 网关。一个主密钥即可访问全部 17+ 模型: GPT-4、Claude、Gemini、智谱 GLM-4-Plus、DeepSeek、Qwen、Mistral、Llama 3 等。无需单独注册账户。',
+        'docs.qs.tip': '提示:', 'docs.qs.tiptext': '如果您用过 OpenAI SDK,TokenMaster 90% 一样。只需换 base URL 和 API key。',
+        'docs.inst.h2': '2. 安装',
+        'docs.inst.p1': '为您的开发语言安装 OpenAI SDK。TokenMaster 使用完全相同的协议。',
+        'docs.inst.h3a': 'Python', 'docs.inst.h3b': 'Node.js', 'docs.inst.curl': '无需安装,任何 HTTP 客户端即可调用 TokenMaster。',
+        'docs.auth.h2': '3. 身份认证',
+        'docs.auth.p1': '所有请求都通过 Bearer Token 鉴权。购买后,您会通过邮件收到主密钥。',
+        'docs.auth.warn': '保密:', 'docs.auth.warntext': '切勿在客户端代码或公开仓库中暴露密钥。生产环境请使用后端代理。',
+        'docs.fr.h2': '4. 第一个请求',
+        'docs.fr.p1': '将您的 OpenAI SDK 指向 TokenMaster 的 base URL,发送一个 chat completion:',
+        'docs.fr.h3a': 'Python', 'docs.fr.h3b': 'Node.js', 'docs.fr.h3c': 'cURL',
+        'docs.m.h2': '5. 选择模型',
+        'docs.m.p1': '在 model 字段传入任意 17+ 支持的模型 ID。完整列表见', 'docs.m.link': '/models',
+        'docs.m.t.model': '模型', 'docs.m.t.use': '适用场景', 'docs.m.t.id': '模型 ID',
+        'docs.m.row1': '通用推理、代码', 'docs.m.row2': '长上下文、代码审查', 'docs.m.row3': '视觉理解、长上下文',
+        'docs.m.row4': '中文场景、低成本 (24M+ 免费)', 'docs.m.row5': '推理、数学、代码', 'docs.m.row6': '中文、多模态',
+        'docs.e.h2': '6. 错误与限流',
+        'docs.e.p1': 'TokenMaster 返回标准 HTTP 状态码:',
+        'docs.e.t.code': '状态码', 'docs.e.t.mean': '含义', 'docs.e.t.fix': '处理',
+        'docs.e.r1': '密钥无效或过期', 'docs.e.r1f': '检查密钥,如持续出现请联系客服',
+        'docs.e.r2': 'tokens 不足', 'docs.e.r2f': '前往价格页购买更多',
+        'docs.e.r3': '触发限流', 'docs.e.r3f': '降低并发,升级到专业版获得更高限额',
+        'docs.e.r4': '上游供应商错误', 'docs.e.r4f': '指数退避重试',
+        'docs.n.h2': '7. 下一步',
+        'docs.n.l1': '浏览全部模型 \u2014 /models',
+        'docs.n.l2': '完整 API 参考 \u2014 /docs/api',
+        'docs.n.l3': '购买密钥 \u2014 价格',
+        'docs.n.l4': '联系客服 \u2014 /contact'
+    }
+};
+function applyLang(lang) {
+    const dict = I18N[lang] || I18N.en;
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const val = dict[key];
+        if (val !== undefined) el.textContent = val;
+    });
+    try { localStorage.setItem('tm_lang', lang); } catch (e) {}
+    const lbl = document.getElementById('lang-toggle-label');
+    if (lbl) lbl.textContent = lang === 'zh' ? '\u4e2d' : 'EN';
+}
+(function init() {
+    let saved = 'en';
+    try {
+        const stored = localStorage.getItem('tm_lang');
+        if (stored && (stored === 'en' || stored === 'zh')) saved = stored;
+        else if (navigator.language && navigator.language.toLowerCase().startsWith('zh')) saved = 'zh';
+    } catch (e) {}
+    applyLang(saved);
+    const toggle = document.getElementById('lang-toggle');
+    if (toggle) toggle.addEventListener('click', e => {
+        e.preventDefault();
+        const cur = (document.documentElement.lang || 'en').startsWith('zh') ? 'zh' : 'en';
+        applyLang(cur === 'zh' ? 'en' : 'zh');
+    });
+})();
+</script>
+</body>
+</html>

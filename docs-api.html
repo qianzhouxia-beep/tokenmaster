@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en" style="scroll-smooth">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Reference — TokenMaster</title>
+<meta name="description" content="TokenMaster REST API reference: chat completions, embeddings, streaming, models list.">
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"></noscript>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<style>
+:root { --primary: #ab3500; --primary-container: #ff6b35; --surface: #fff8f6; --on-surface: #261814; --secondary: #5f5e5e; --outline-variant: #e1bfb5; --surface-container-low: #fff1ed; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--surface); color: var(--on-surface); line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
+header { background: var(--surface); border-bottom: 1px solid var(--outline-variant); position: sticky; top: 0; z-index: 50; backdrop-filter: blur(8px); }
+nav { max-width: 1200px; margin: 0 auto; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; }
+.logo { display: flex; align-items: center; gap: 8px; font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 20px; color: var(--on-surface); text-decoration: none; }
+.nav-links { display: flex; gap: 32px; }
+.nav-links a { color: var(--secondary); text-decoration: none; font-size: 16px; font-weight: 500; transition: color 0.2s; }
+.nav-links a:hover, .nav-links a.active { color: var(--primary); }
+.lang-toggle { display: flex; align-items: center; gap: 4px; padding: 6px 12px; border: 1px solid var(--outline-variant); border-radius: 9999px; background: transparent; color: var(--secondary); font-family: "JetBrains Mono", monospace; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+.lang-toggle:hover { border-color: var(--primary); color: var(--primary); }
+.cta-btn { background: var(--primary-container); color: #fff; padding: 8px 20px; border-radius: 6px; font-family: "JetBrains Mono", monospace; font-size: 14px; font-weight: 500; text-decoration: none; }
+.cta-btn:hover { background: var(--primary); }
+main { flex: 1; max-width: 900px; margin: 0 auto; padding: 64px 32px; width: 100%; }
+h1 { font-family: "Space Grotesk", sans-serif; font-size: 48px; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 16px; }
+.lead { font-size: 20px; color: var(--secondary); margin-bottom: 48px; }
+h2 { font-family: "Space Grotesk", sans-serif; font-size: 32px; font-weight: 600; line-height: 1.2; margin: 48px 0 8px; padding-top: 16px; border-top: 1px solid var(--outline-variant); }
+h2:first-of-type { border-top: 0; padding-top: 0; }
+h3 { font-family: "JetBrains Mono", monospace; font-size: 16px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary); margin: 24px 0 8px; }
+.method { display: inline-block; padding: 4px 10px; border-radius: 4px; font-family: "JetBrains Mono", monospace; font-size: 12px; font-weight: 500; text-transform: uppercase; margin-right: 8px; }
+.method-post { background: #d1f4e0; color: #0a6e3f; }
+.method-get { background: #d0e2ff; color: #1a4ea3; }
+p { margin-bottom: 16px; }
+code { font-family: "JetBrains Mono", monospace; font-size: 14px; background: var(--surface-container-low); padding: 2px 6px; border-radius: 4px; color: var(--primary); }
+pre { background: #1a1a1a; color: #fff; padding: 20px; border-radius: 8px; overflow-x: auto; margin: 12px 0 24px; }
+pre code { background: transparent; color: #fff; padding: 0; font-size: 14px; line-height: 1.6; }
+.endpoint { background: var(--surface-container-low); padding: 16px 20px; border-radius: 8px; font-family: "JetBrains Mono", monospace; font-size: 14px; margin: 12px 0 16px; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 24px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--outline-variant); vertical-align: top; }
+th { font-family: "JetBrains Mono", monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary); }
+footer { background: var(--surface-container-low); border-top: 1px solid var(--outline-variant); padding: 32px; text-align: center; font-size: 14px; color: var(--secondary); }
+footer a { color: var(--primary); text-decoration: none; margin: 0 12px; }
+.material-symbols-outlined { font-family: "Material Symbols Outlined", "Apple Color Emoji", "Segoe UI Emoji", sans-serif; font-weight: normal; font-style: normal; font-size: 18px; vertical-align: middle; }
+@media (max-width: 768px) { .nav-links { display: none; } h1 { font-size: 32px; } h2 { font-size: 24px; } main { padding: 32px 20px; } }
+</style>
+</head>
+<body>
+<header>
+<nav>
+<a class="logo" href="landing.html"><img src="assets/logo.png" alt="TokenMaster" style="height: 40px; width: auto; max-width: 200px; object-fit: contain; display: block;">TokenMaster</a>
+<div class="nav-links">
+<a href="landing.html#features">Features</a>
+<a href="landing.html#pricing">Pricing</a>
+<a href="landing.html#faq">FAQ</a>
+<a href="docs.html">Docs</a>
+</div>
+<div style="display: flex; align-items: center; gap: 12px;">
+<button class="lang-toggle" id="lang-toggle" type="button" aria-label="Switch language">
+<span class="material-symbols-outlined" style="font-size: 16px;">public</span>
+<span id="lang-toggle-label">EN</span>
+</button>
+<a class="cta-btn" href="landing.html">Get Tokens</a>
+</div>
+</nav>
+</header>
+<main>
+<h1 data-i18n="apiref.h1">API Reference</h1>
+<p class="lead" data-i18n="apiref.lead">Full REST API spec for TokenMaster. OpenAI-compatible. Works with any OpenAI SDK.</p>
+
+<p style="background: var(--surface-container-low); padding: 12px 20px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 14px;">
+<span data-i18n="apiref.base">Base URL</span>: <code style="background: transparent; color: var(--primary);">https://api-tokenmaster.com/v1</code>
+</p>
+
+<h2 data-i18n="apiref.chat.h2">Chat Completions</h2>
+<h3><span class="method method-post">POST</span><span data-i18n="apiref.chat.ep">/v1/chat/completions</span></h3>
+<p data-i18n="apiref.chat.p1">Create a chat completion. The request body matches OpenAI's <code>chat.completions.create</code> schema exactly.</p>
+
+<h3 data-i18n="apiref.chat.body">Request body</h3>
+<table>
+<thead><tr><th data-i18n="apiref.t.field">Field</th><th data-i18n="apiref.t.type">Type</th><th data-i18n="apiref.t.req">Required</th><th data-i18n="apiref.t.desc">Description</th></tr></thead>
+<tbody>
+<tr><td><code>model</code></td><td>string</td><td>yes</td><td data-i18n="apiref.chat.f1">Model id. See <a href="models.html">/models</a> for the full list.</td></tr>
+<tr><td><code>messages</code></td><td>array</td><td>yes</td><td data-i18n="apiref.chat.f2">Array of {role, content}. role is "system" / "user" / "assistant".</td></tr>
+<tr><td><code>temperature</code></td><td>number</td><td>no</td><td data-i18n="apiref.chat.f3">0.0–2.0. Default 1.0. Higher = more random.</td></tr>
+<tr><td><code>max_tokens</code></td><td>integer</td><td>no</td><td data-i18n="apiref.chat.f4">Cap on tokens to generate. Model-dependent.</td></tr>
+<tr><td><code>stream</code></td><td>boolean</td><td>no</td><td data-i18n="apiref.chat.f5">If true, return SSE stream of completion chunks.</td></tr>
+<tr><td><code>top_p</code></td><td>number</td><td>no</td><td data-i18n="apiref.chat.f6">Nucleus sampling. 0.0–1.0. Default 1.0.</td></tr>
+<tr><td><code>stop</code></td><td>string | array</td><td>no</td><td data-i18n="apiref.chat.f7">Stop sequences. Up to 4.</td></tr>
+</tbody>
+</table>
+
+<h3 data-i18n="apiref.chat.example">Example request</h3>
+<pre><code>POST https://api-tokenmaster.com/v1/chat/completions
+Authorization: Bearer TM-xxxxxxxx
+Content-Type: application/json
+
+{
+  "model": "gpt-4o",
+  "messages": [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "Explain quantum entanglement in 2 sentences."}
+  ],
+  "temperature": 0.7,
+  "max_tokens": 200
+}</code></pre>
+
+<h3 data-i18n="apiref.chat.resp">Example response</h3>
+<pre><code>{
+  "id": "chatcmpl-abc123",
+  "object": "chat.completion",
+  "created": 1717929600,
+  "model": "gpt-4o",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Quantum entanglement is a phenomenon where two particles become correlated such that the state of one instantly influences the state of the other, regardless of distance. It's a key resource in quantum computing and quantum cryptography."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 24,
+    "completion_tokens": 41,
+    "total_tokens": 65
+  }
+}</code></pre>
+
+<h2 data-i18n="apiref.stream.h2">Streaming</h2>
+<p data-i18n="apiref.stream.p1">Set <code>stream: true</code> to receive Server-Sent Events. Each event is a JSON chunk followed by <code>\\n\\n</code>.</p>
+<pre><code>event: data
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","choices":[{"delta":{"content":"Quantum"},"index":0}]}
+
+event: data
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","choices":[{"delta":{"content":" entang"},"index":0}]}
+
+event: data
+data: [DONE]</code></pre>
+
+<h2 data-i18n="apiref.models.h2">List Models</h2>
+<h3><span class="method method-get">GET</span><span data-i18n="apiref.models.ep">/v1/models</span></h3>
+<p data-i18n="apiref.models.p1">Returns all 17+ models currently available on TokenMaster.</p>
+<pre><code>GET https://api-tokenmaster.com/v1/models
+Authorization: Bearer TM-xxxxxxxx</code></pre>
+<pre><code>{
+  "object": "list",
+  "data": [
+    {"id": "gpt-4o", "object": "model", "owned_by": "openai", "context_window": 128000},
+    {"id": "claude-3-5-sonnet", "object": "model", "owned_by": "anthropic", "context_window": 200000},
+    {"id": "glm-4-plus", "object": "model", "owned_by": "zhipu", "context_window": 128000},
+    ...
+  ]
+}</code></pre>
+
+<h2 data-i18n="apiref.embed.h2">Embeddings</h2>
+<h3><span class="method method-post">POST</span><span data-i18n="apiref.embed.ep">/v1/embeddings</span></h3>
+<p data-i18n="apiref.embed.p1">Generate vector embeddings for semantic search, RAG, clustering.</p>
+<table>
+<thead><tr><th data-i18n="apiref.t.field">Field</th><th data-i18n="apiref.t.type">Type</th><th data-i18n="apiref.t.req">Required</th><th data-i18n="apiref.t.desc">Description</th></tr></thead>
+<tbody>
+<tr><td><code>model</code></td><td>string</td><td>yes</td><td data-i18n="apiref.embed.f1">Currently <code>text-embedding-3-small</code>, <code>text-embedding-3-large</code>, <code>text-embedding-ada-002</code>.</td></tr>
+<tr><td><code>input</code></td><td>string | array</td><td>yes</td><td data-i18n="apiref.embed.f2">Text or array of texts to embed.</td></tr>
+<tr><td><code>encoding_format</code></td><td>string</td><td>no</td><td data-i18n="apiref.embed.f3"><code>float</code> (default) or <code>base64</code>.</td></tr>
+</tbody>
+</table>
+
+<h2 data-i18n="apiref.errors.h2">Errors</h2>
+<p data-i18n="apiref.errors.p1">Errors return a JSON body with a <code>code</code> and <code>message</code> field. See <a href="docs.html#errors">/docs#errors</a> for the full table.</p>
+<pre><code>{
+  "error": {
+    "code": "insufficient_tokens",
+    "message": "Your account is out of tokens. Please purchase more at https://api-tokenmaster.com/landing#pricing.",
+    "type": "billing_error"
+  }
+}</code></pre>
+
+<h2 data-i18n="apiref.rate.h2">Rate Limits</h2>
+<table>
+<thead><tr><th data-i18n="apiref.t.tier">Tier</th><th data-i18n="apiref.t.rpm">Requests/min</th><th data-i18n="apiref.t.tpm">Tokens/min</th></tr></thead>
+<tbody>
+<tr><td>Starter</td><td>60</td><td>200,000</td></tr>
+<tr><td>Growth</td><td>300</td><td>1,000,000</td></tr>
+<tr><td>Pro</td><td>1,200</td><td>5,000,000</td></tr>
+<tr><td>Enterprise</td><td data-i18n="apiref.rate.custom">Custom</td><td data-i18n="apiref.rate.custom">Custom</td></tr>
+</tbody>
+</table>
+
+</main>
+<footer>
+<div>
+<a href="landing.html">Home</a>
+<a href="docs.html">Docs</a>
+<a href="docs-api.html">API Ref</a>
+<a href="models.html">Models</a>
+<a href="about.html">About</a>
+<a href="contact.html">Contact</a>
+<a href="privacy.html">Privacy</a>
+<a href="terms.html">Terms</a>
+</div>
+<div style="margin-top: 16px; font-size: 12px;">&copy; 2026 TokenMaster AI. All rights reserved.</div>
+</footer>
+<script>
+const I18N = {
+    en: {
+        'apiref.h1': 'API Reference',
+        'apiref.lead': 'Full REST API spec for TokenMaster. OpenAI-compatible. Works with any OpenAI SDK.',
+        'apiref.base': 'Base URL',
+        'apiref.chat.h2': 'Chat Completions',
+        'apiref.chat.ep': '/v1/chat/completions',
+        'apiref.chat.p1': 'Create a chat completion. The request body matches OpenAI\u2019s chat.completions.create schema exactly.',
+        'apiref.chat.body': 'Request body',
+        'apiref.t.field': 'Field', 'apiref.t.type': 'Type', 'apiref.t.req': 'Required', 'apiref.t.desc': 'Description',
+        'apiref.chat.f1': 'Model id. See /models for the full list.',
+        'apiref.chat.f2': 'Array of {role, content}. role is "system" / "user" / "assistant".',
+        'apiref.chat.f3': '0.0\u20132.0. Default 1.0. Higher = more random.',
+        'apiref.chat.f4': 'Cap on tokens to generate. Model-dependent.',
+        'apiref.chat.f5': 'If true, return SSE stream of completion chunks.',
+        'apiref.chat.f6': 'Nucleus sampling. 0.0\u20131.0. Default 1.0.',
+        'apiref.chat.f7': 'Stop sequences. Up to 4.',
+        'apiref.chat.example': 'Example request',
+        'apiref.chat.resp': 'Example response',
+        'apiref.stream.h2': 'Streaming',
+        'apiref.stream.p1': 'Set stream: true to receive Server-Sent Events. Each event is a JSON chunk followed by \\n\\n.',
+        'apiref.models.h2': 'List Models',
+        'apiref.models.ep': '/v1/models',
+        'apiref.models.p1': 'Returns all 17+ models currently available on TokenMaster.',
+        'apiref.embed.h2': 'Embeddings',
+        'apiref.embed.ep': '/v1/embeddings',
+        'apiref.embed.p1': 'Generate vector embeddings for semantic search, RAG, clustering.',
+        'apiref.embed.f1': 'Currently text-embedding-3-small, text-embedding-3-large, text-embedding-ada-002.',
+        'apiref.embed.f2': 'Text or array of texts to embed.',
+        'apiref.embed.f3': 'float (default) or base64.',
+        'apiref.errors.h2': 'Errors',
+        'apiref.errors.p1': 'Errors return a JSON body with a code and message field. See /docs#errors for the full table.',
+        'apiref.rate.h2': 'Rate Limits',
+        'apiref.t.tier': 'Tier', 'apiref.t.rpm': 'Requests/min', 'apiref.t.tpm': 'Tokens/min',
+        'apiref.rate.custom': 'Custom'
+    },
+    zh: {
+        'apiref.h1': 'API 参考',
+        'apiref.lead': 'TokenMaster 完整 REST API 规范。OpenAI 兼容,适用于任何 OpenAI SDK。',
+        'apiref.base': 'Base URL',
+        'apiref.chat.h2': 'Chat Completions',
+        'apiref.chat.ep': '/v1/chat/completions',
+        'apiref.chat.p1': '创建一个 chat completion。请求体与 OpenAI 的 chat.completions.create schema 完全一致。',
+        'apiref.chat.body': '请求体',
+        'apiref.t.field': '字段', 'apiref.t.type': '类型', 'apiref.t.req': '必填', 'apiref.t.desc': '说明',
+        'apiref.chat.f1': '模型 ID。完整列表见 /models。',
+        'apiref.chat.f2': '消息数组,每个元素为 {role, content}。role 可为 system / user / assistant。',
+        'apiref.chat.f3': '0.0–2.0,默认 1.0。值越大越随机。',
+        'apiref.chat.f4': '生成 token 上限,因模型而异。',
+        'apiref.chat.f5': '为 true 时返回 SSE 流式响应。',
+        'apiref.chat.f6': '核采样。0.0–1.0,默认 1.0。',
+        'apiref.chat.f7': '停止序列,最多 4 个。',
+        'apiref.chat.example': '请求示例',
+        'apiref.chat.resp': '响应示例',
+        'apiref.stream.h2': '流式响应',
+        'apiref.stream.p1': '设置 stream: true 即可接收 Server-Sent Events。每个事件是一个 JSON chunk,后跟 \\n\\n。',
+        'apiref.models.h2': '模型列表',
+        'apiref.models.ep': '/v1/models',
+        'apiref.models.p1': '返回 TokenMaster 当前可用的全部 17+ 模型。',
+        'apiref.embed.h2': 'Embeddings',
+        'apiref.embed.ep': '/v1/embeddings',
+        'apiref.embed.p1': '生成向量嵌入,用于语义搜索、RAG、聚类。',
+        'apiref.embed.f1': '当前支持 text-embedding-3-small、text-embedding-3-large、text-embedding-ada-002。',
+        'apiref.embed.f2': '单段文本或文本数组。',
+        'apiref.embed.f3': 'float (默认) 或 base64。',
+        'apiref.errors.h2': '错误',
+        'apiref.errors.p1': '错误返回 JSON,包含 code 和 message 字段。完整错误表见 /docs#errors。',
+        'apiref.rate.h2': '限流',
+        'apiref.t.tier': '套餐', 'apiref.t.rpm': '请求/分钟', 'apiref.t.tpm': 'Tokens/分钟',
+        'apiref.rate.custom': '定制'
+    }
+};
+function applyLang(lang) {
+    const dict = I18N[lang] || I18N.en;
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const val = dict[key];
+        if (val !== undefined) el.textContent = val;
+    });
+    try { localStorage.setItem('tm_lang', lang); } catch (e) {}
+    const lbl = document.getElementById('lang-toggle-label');
+    if (lbl) lbl.textContent = lang === 'zh' ? '\u4e2d' : 'EN';
+}
+(function init() {
+    let saved = 'en';
+    try {
+        const stored = localStorage.getItem('tm_lang');
+        if (stored && (stored === 'en' || stored === 'zh')) saved = stored;
+        else if (navigator.language && navigator.language.toLowerCase().startsWith('zh')) saved = 'zh';
+    } catch (e) {}
+    applyLang(saved);
+    const toggle = document.getElementById('lang-toggle');
+    if (toggle) toggle.addEventListener('click', e => {
+        e.preventDefault();
+        const cur = (document.documentElement.lang || 'en').startsWith('zh') ? 'zh' : 'en';
+        applyLang(cur === 'zh' ? 'en' : 'zh');
+    });
+})();
+</script>
+</body>
+</html>

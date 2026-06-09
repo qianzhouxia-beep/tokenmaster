@@ -1,0 +1,807 @@
+<!DOCTYPE html><html class="scroll-smooth" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>TokenMaster | Unified AI Model Gateway</title>
+<!-- Fonts: try Google first, fallback to system stack to avoid China firewall breakage -->
+<link href="https://fonts.googleapis.com" rel="preconnect" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"></noscript>
+<!-- Material Symbols: use text fallback (emoji) when CDN blocked -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"></noscript>
+<style>
+/* System font fallback when Google Fonts blocked (China firewall etc.) */
+:root {
+    --font-display-lg: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --font-body-md: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --font-label-md: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    font-family: "Material Symbols Outlined", "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+}
+</style>
+<!-- Tailwind Play CDN: dev convenience. Will be replaced with a precompiled build before production deploy to Zeabur. The console warning is expected and only visible to developers, not end users. -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-bright": "#fff8f6",
+                      "secondary-fixed-dim": "#c8c6c5",
+                      "on-surface-variant": "#594139",
+                      "on-primary": "#ffffff",
+                      "primary-fixed-dim": "#ffb59d",
+                      "inverse-primary": "#ffb59d",
+                      "on-tertiary": "#ffffff",
+                      "on-secondary-container": "#636262",
+                      "inverse-on-surface": "#ffede8",
+                      "primary-fixed": "#ffdbd0",
+                      "on-tertiary-fixed": "#0b1c30",
+                      "error": "#ba1a1a",
+                      "on-surface": "#261814",
+                      "surface-container": "#ffe9e3",
+                      "surface-tint": "#ab3500",
+                      "on-secondary-fixed": "#1c1b1b",
+                      "on-background": "#261814",
+                      "error-container": "#ffdad6",
+                      "background": "#fff8f6",
+                      "outline": "#8d7168",
+                      "surface-container-low": "#fff1ed",
+                      "surface-dim": "#eed5cd",
+                      "secondary-container": "#e2dfde",
+                      "on-secondary-fixed-variant": "#474746",
+                      "secondary-fixed": "#e5e2e1",
+                      "secondary": "#5f5e5e",
+                      "surface-variant": "#f7ddd5",
+                      "primary": "#ab3500",
+                      "on-primary-fixed-variant": "#832600",
+                      "on-error-container": "#93000a",
+                      "inverse-surface": "#3c2d28",
+                      "tertiary-fixed": "#d3e4fe",
+                      "on-error": "#ffffff",
+                      "on-tertiary-fixed-variant": "#38485d",
+                      "on-primary-fixed": "#390c00",
+                      "tertiary-container": "#8b9bb3",
+                      "surface-container-lowest": "#ffffff",
+                      "tertiary-fixed-dim": "#b7c8e1",
+                      "surface-container-high": "#fde3db",
+                      "on-secondary": "#ffffff",
+                      "surface": "#fff8f6",
+                      "on-tertiary-container": "#233347",
+                      "tertiary": "#505f76",
+                      "outline-variant": "#e1bfb5",
+                      "surface-container-highest": "#f7ddd5",
+                      "primary-container": "#ff6b35",
+                      "on-primary-container": "#5f1900"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter": "24px",
+                      "base": "4px",
+                      "md": "16px",
+                      "xxl": "80px",
+                      "lg": "24px",
+                      "xs": "4px",
+                      "xl": "40px",
+                      "margin": "32px",
+                      "sm": "8px"
+              },
+              "fontFamily": {
+                      "headline-lg": ["Space Grotesk"],
+                      "headline-md": ["Space Grotesk"],
+                      "body-md": ["Inter"],
+                      "label-md": ["JetBrains Mono"],
+                      "label-sm": ["JetBrains Mono"],
+                      "display-lg": ["Space Grotesk"],
+                      "body-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                      "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                      "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "label-md": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                      "label-sm": ["12px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                      "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .bento-card {
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .bento-card:hover {
+            border-color: #ab3500;
+        }
+        details > summary {
+            list-style: none;
+        }
+        details > summary::-webkit-details-marker {
+            display: none;
+        }
+        /* Language toggle — globe button with active state */
+        .lang-toggle-btn {
+            min-width: 64px;
+        }
+        .lang-toggle-btn:hover .material-symbols-outlined {
+            transform: rotate(15deg);
+            transition: transform 0.3s ease;
+        }
+        .lang-toggle-btn .material-symbols-outlined {
+            transition: transform 0.3s ease;
+        }
+        /* Material Symbols robust fallback: if webfont not loaded, show a Unicode glyph or text. */
+        .material-symbols-outlined {
+            font-family: "Material Symbols Outlined", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Symbola", sans-serif;
+            font-weight: normal;
+            font-style: normal;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+        /* Per-icon Unicode fallback when Material Symbols font fails to load */
+        .material-symbols-outlined[style*="check_circle"]::before { content: "\2713"; }      /* ✓ */
+        .material-symbols-outlined[style*="expand_more"]::before { content: "\25BC"; }      /* ▼ */
+        .material-symbols-outlined[class*="arrow_forward"]::before { content: "\2192"; }    /* → */
+        .material-symbols-outlined[class*="public"]::before { content: "\1F310"; }          /* 🌐 */
+        .material-symbols-outlined[class*="hub"]::before { content: "\1F5CE"; }              /* 🗎 (placeholder visual) */
+    </style>
+</head>
+<body class="bg-surface-bright text-on-surface font-body-md overflow-x-hidden">
+<!-- Section 1: Hero & Sticky Nav -->
+<header class="sticky top-0 w-full z-50 bg-surface-bright/80 backdrop-blur-md border-b border-outline-variant">
+<nav class="flex justify-between items-center px-gutter py-md max-w-7xl mx-auto">
+<div class="flex items-center gap-sm">
+<img src="assets/logo.png" alt="TokenMaster Logo" style="height: 40px; width: auto; max-width: 200px; object-fit: contain; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
+<span class="hidden inline-flex items-center justify-center" style="width: 40px; height: 40px; border-radius: 8px; background: var(--primary); color: #fff; font-weight: 700; font-family: 'Space Grotesk', sans-serif;">TM</span>
+</div>
+<div class="hidden md:flex items-center gap-xl">
+                            <a class="text-secondary font-body-md hover:text-primary transition-colors" href="#features" data-i18n="nav.features">Features</a>
+                            <a class="text-secondary font-body-md hover:text-primary transition-colors" href="#pricing" data-i18n="nav.pricing">Pricing</a>
+                            <a class="text-secondary font-body-md hover:text-primary transition-colors" href="#faq" data-i18n="nav.faq">FAQ</a>
+                            <a class="text-secondary font-body-md hover:text-primary transition-colors" href="#" data-i18n="nav.docs">Docs</a>
+                        </div>
+                        <div class="flex items-center gap-sm md:gap-md">
+                            <button id="lang-toggle" type="button" aria-label="Switch language" class="lang-toggle-btn flex items-center gap-xs px-sm md:px-md py-sm rounded-full border border-outline-variant text-secondary font-label-md hover:border-primary hover:text-primary transition-all">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">public</span>
+                                <span id="lang-toggle-label">EN</span>
+                            </button>
+                            <button class="bg-[#FF6B35] text-white px-md md:px-lg py-sm rounded font-label-md hover:bg-primary-container transition-all" data-i18n="nav.cta">Get Tokens</button>
+                        </div>
+</nav>
+</header>
+<main>
+<!-- Hero Section -->
+<section class="relative pt-xxl pb-xxl px-gutter">
+<div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-xl">
+<div class="lg:w-1/2 space-y-lg">
+                    <h1 class="text-on-surface leading-tight" style="font-family: 'Space Grotesk', sans-serif; font-size: clamp(2.25rem, 5vw, 3.5rem); font-weight: 700; line-height: 1.05; letter-spacing: -0.03em; text-wrap: balance;" data-i18n="hero.title">
+                        One API key. <span class="text-primary" data-i18n="hero.models">17+</span> AI models. <span class="text-primary-container" data-i18n="hero.discount">75%</span> off OpenAI.
+                    </h1>
+                    <p class="font-body-lg text-body-lg text-secondary max-w-xl" data-i18n="hero.subtitle">
+                        TokenMaster is the cheap AI token gateway for indie developers. Same OpenAI-compatible API, pay 75% less. 17+ models including Zhipu GLM-4-Plus, DeepSeek, Qwen, GPT-4, Claude — all in one key.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-md pt-md">
+                        <button class="bg-[#FF6B35] text-white px-xl py-md rounded font-label-md hover:shadow-lg transition-all flex items-center justify-center gap-sm" id="cta-hero-main" data-i18n="hero.cta">Get 100M tokens for $30<span class="material-symbols-outlined text-[20px]">arrow_forward</span></button>
+                        <button class="border border-outline text-on-surface px-xl py-md rounded font-label-md hover:bg-surface-container transition-all" id="cta-hero-sec" data-i18n="hero.cta2">
+                            See pricing
+                        </button>
+</div>
+                    <div class="pt-xl border-t border-outline-variant flex flex-wrap gap-x-xl gap-y-sm font-body-md text-on-surface-variant">
+                        <span><strong class="font-headline-md text-on-surface font-bold not-italic">24M+</strong> <span class="italic" data-i18n="hero.stat1">Zhipu free tokens</span></span>
+                        <span><strong class="font-headline-md text-on-surface font-bold not-italic">17+</strong> <span class="italic" data-i18n="hero.stat2">AI models live</span></span>
+                        <span><strong class="font-headline-md text-on-surface font-bold not-italic">99.9%</strong> <span class="italic" data-i18n="hero.stat3">uptime SLA</span></span>
+                    </div>
+</div>
+                <div class="lg:w-1/2 w-full">
+                    <div class="relative rounded-xl overflow-hidden border border-outline-variant shadow-2xl bg-white aspect-video group">
+                        <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="/assets/hero.png?v=1" alt="TokenMaster AI Gateway" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="hidden absolute inset-0 items-center justify-center bg-gradient-to-br from-surface-container-low to-primary-fixed text-on-surface-variant">
+                            <div class="text-center p-lg">
+                                <span class="material-symbols-outlined block text-6xl text-primary mb-md">hub</span>
+                                <p class="font-body-md text-on-surface-variant italic">AI Gateway Visualization</p>
+                            </div>
+                        </div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none"></div>
+                    </div>
+                </div>
+</div>
+</section>
+<!-- Section 2: Features Bento -->
+<section class="py-xxl px-gutter bg-surface-container-low" id="features">
+<div class="max-w-7xl mx-auto">
+        <div class="mb-xl">
+            <h2 class="font-headline-lg text-headline-lg" data-i18n="features.title">Built for the next 1,000 ships.</h2>
+        </div>
+<div class="grid grid-cols-12 gap-md">
+<!-- Main Card (8/12) -->
+<div class="col-span-12 lg:col-span-8 bg-white border border-outline-variant p-xl rounded-xl bento-card flex flex-col justify-between">
+<div>
+                <h3 class="font-headline-md text-headline-md mb-sm" data-i18n="features.gateway.title">Unified Multi-Model Gateway</h3>
+                <p class="text-secondary font-body-md mb-lg max-w-md" data-i18n="features.gateway.desc">Drop-in OpenAI compatibility. Switch between Llama, Claude, and GPT-4 with a single parameter change. No more SDK bloat.</p>
+</div>
+<div class="bg-on-surface rounded p-lg font-label-md text-on-primary overflow-x-auto">
+<code class="block text-[#FF6B35]">POST /v1/chat/completions</code>
+<code class="block mt-sm opacity-70">Authorization: Bearer <span class="text-white">TM_TOKEN_MASTER_KEY</span></code>
+<code class="block mt-xs opacity-70">{ "model": "<span class="text-white">claude-3-opus</span>", "messages": [...] }</code>
+</div>
+</div>
+                <!-- Sub Card 1 (4/12) -->
+                <div class="col-span-12 md:col-span-6 lg:col-span-4 bg-white border border-outline-variant p-xl rounded-xl bento-card">
+                    <img src="/assets/enterprise-security.png?v=1" alt="Enterprise Security" class="w-16 h-16 mb-md object-contain rounded-lg" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
+                    <span class="hidden items-center justify-center w-16 h-16 mb-md rounded-lg bg-primary-fixed text-primary">
+                        <span class="material-symbols-outlined text-3xl">shield</span>
+                    </span>
+                    <h3 class="font-headline-md text-on-surface" data-i18n="features.security.title">Enterprise Security</h3>
+                    <p class="text-secondary font-body-md" data-i18n="features.security.desc">Hardened endpoints featuring AES-256 encryption, cryptographic signatures, and granular IP Whitelisting.</p>
+                </div>
+<!-- Sub Card 2 (4/12, primary bg) -->
+<div class="col-span-12 md:col-span-6 lg:col-span-4 bg-primary p-xl rounded-xl bento-card text-on-primary">
+<span class="material-symbols-outlined text-white mb-md" style="font-size: 32px;">payments</span>
+                <h3 class="font-headline-md text-headline-md mb-sm" data-i18n="features.payg.title">Pay-as-you-go</h3>
+                <p class="opacity-90 font-body-md" data-i18n="features.payg.desc">No monthly minimums. No seat costs. Buy credits, use them until they're gone. Full transparency in the console.</p>
+</div>
+                <!-- Sub Card 3 (8/12) -->
+                <div class="col-span-12 lg:col-span-8 bg-white border border-outline-variant p-xl rounded-xl bento-card flex items-center gap-lg">
+                    <div class="hidden sm:block">
+                        <div class="grid grid-cols-3 gap-base w-32 h-32 opacity-20">
+                            <div class="bg-primary rounded-sm"></div><div class="bg-secondary rounded-sm"></div><div class="bg-primary rounded-sm"></div>
+                            <div class="bg-secondary rounded-sm"></div><div class="bg-primary rounded-sm"></div><div class="bg-secondary rounded-sm"></div>
+                            <div class="bg-primary rounded-sm"></div><div class="bg-secondary rounded-sm"></div><div class="bg-primary rounded-sm"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-headline-md text-headline-md mb-sm" data-i18n="features.models.title">17+ AI Models, Real-time</h3>
+                        <p class="text-secondary font-body-md" data-i18n="features.models.desc">Zhipu GLM-4-Plus (24M+ free tokens), DeepSeek-V3, Qwen-Max, GPT-4o, Claude 3.5, Gemini Pro, Mistral Large, Llama 3. Route by cost or latency — all under one OpenAI-compatible key.</p>
+                    </div>
+                </div>
+</div>
+</div>
+</section>
+<!-- Section 3: Pricing -->
+<section class="py-xxl px-gutter" id="pricing">
+<div class="max-w-7xl mx-auto">
+            <div class="text-center mb-xxl">
+                <h2 class="text-on-surface" style="font-family: 'Space Grotesk', sans-serif; font-size: clamp(1.75rem, 3.5vw, 2.5rem); font-weight: 600; line-height: 1.15; letter-spacing: -0.02em; text-wrap: balance;" data-i18n="pricing.title">Simple, predictable pricing.</h2>
+                <p class="font-body-lg text-body-lg text-secondary mt-md" data-i18n="pricing.subtitle">Scale from zero to millions of tokens without breaking the bank.</p>
+            </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-lg items-stretch">
+                        <!-- Starter — compact, smaller, no badge -->
+                        <div class="bg-white border border-outline-variant p-xl rounded-xl flex flex-col h-full">
+                            <p class="font-label-sm text-secondary tracking-wider mb-xs" data-i18n="pricing.starter.name">Starter</p>
+                            <p class="font-body-sm text-on-surface-variant mb-md" data-i18n="pricing.starter.tagline">For first-time builders</p>
+                            <p class="font-headline-lg text-headline-lg mb-lg">$10</p>
+                            <ul class="space-y-sm mb-xl flex-grow">
+                                <li class="flex items-baseline gap-sm font-body-md text-on-surface border-b border-outline-variant/50 pb-sm">
+                                    <span data-i18n="pricing.starter.f1">30M tokens</span>
+                                </li>
+                                <li class="flex items-baseline gap-sm font-body-md text-on-surface border-b border-outline-variant/50 pb-sm">
+                                    <span data-i18n="pricing.starter.f2">3 base models</span>
+                                </li>
+                                <li class="flex items-baseline gap-sm font-body-md text-on-surface border-b border-outline-variant/50 pb-sm">
+                                    <span data-i18n="pricing.starter.f3">PayPal</span>
+                                </li>
+                                <li class="flex items-baseline gap-sm font-body-md text-on-surface border-b border-outline-variant/50 pb-sm">
+                                    <span data-i18n="pricing.starter.f4">Email support</span>
+                                </li>
+                            </ul>
+                            <button class="w-full bg-[#FF6B35] text-white py-md rounded font-label-md hover:shadow-lg transition-all" id="buy-starter" data-i18n="pricing.starter.cta">Buy Starter</button>
+                        </div>
+                        <!-- Growth — full card, badge, icon strip -->
+                        <div class="bg-white border-2 border-primary p-xl rounded-xl flex flex-col h-full relative shadow-md">
+                            <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-on-primary px-lg py-xs rounded-full font-label-sm whitespace-nowrap z-10" data-i18n="pricing.growth.badge">&nbsp; &nbsp;Most&nbsp; &nbsp; Popular</div>
+                            <p class="font-label-sm text-primary tracking-wider mb-xs" data-i18n="pricing.growth.name">Growth</p>
+                            <p class="font-body-sm text-on-surface-variant mb-md" data-i18n="pricing.growth.tagline">For shipping products</p>
+                            <p class="font-headline-lg text-headline-lg mb-md">$30</p>
+                            <div class="flex gap-sm mb-lg text-on-surface-variant">
+                                <span class="material-symbols-outlined text-primary" style="font-size: 18px;" title="GPT-4o">token</span>
+                                <span class="material-symbols-outlined text-primary" style="font-size: 18px;" title="Claude 3.5">psychology</span>
+                                <span class="material-symbols-outlined text-primary" style="font-size: 18px;" title="Gemini Pro">auto_awesome</span>
+                                <span class="material-symbols-outlined text-primary" style="font-size: 18px;" title="Zhipu GLM-4-Plus">translate</span>
+                                <span class="material-symbols-outlined text-primary" style="font-size: 18px;" title="+ 13 more">add_circle</span>
+                            </div>
+                            <ul class="space-y-md mb-xl flex-grow">
+                                <li class="flex items-center gap-sm font-body-md text-on-surface">
+                                    <span class="material-symbols-outlined text-primary" style="font-size: 18px;">check_circle</span> <span data-i18n="pricing.growth.f1">100M tokens</span>
+                                </li>
+                                <li class="flex items-center gap-sm font-body-md text-on-surface">
+                                    <span class="material-symbols-outlined text-primary" style="font-size: 18px;">check_circle</span> <span data-i18n="pricing.growth.f2">All 17+ models access</span>
+                                </li>
+                                <li class="flex items-center gap-sm font-body-md text-on-surface">
+                                    <span class="material-symbols-outlined text-primary" style="font-size: 18px;">check_circle</span> <span data-i18n="pricing.growth.f3">PayPal + NOWPayments crypto</span>
+                                </li>
+                                <li class="flex items-center gap-sm font-body-md text-on-surface">
+                                    <span class="material-symbols-outlined text-primary" style="font-size: 18px;">check_circle</span> <span data-i18n="pricing.growth.f4">Zhipu 24M+ free tokens</span>
+                                </li>
+                                <li class="flex items-center gap-sm font-body-md text-on-surface">
+                                    <span class="material-symbols-outlined text-primary" style="font-size: 18px;">check_circle</span> <span data-i18n="pricing.growth.f5">Usage Dashboard</span>
+                                </li>
+                            </ul>
+                            <button class="w-full bg-[#FF6B35] text-white py-md rounded font-label-md hover:shadow-lg transition-all" id="buy-growth" data-i18n="pricing.growth.cta">Buy Growth</button>
+                        </div>
+                        <!-- Pro — light, with API key visual hook -->
+                        <div class="bg-surface-container-low border border-outline-variant p-xl rounded-xl flex flex-col h-full">
+                            <p class="font-label-sm text-on-surface tracking-wider mb-xs" data-i18n="pricing.pro.name">Pro</p>
+                            <p class="font-body-sm text-on-surface-variant mb-md" data-i18n="pricing.pro.tagline">For teams at scale</p>
+                            <p class="font-headline-lg text-headline-lg mb-md">$100</p>
+                            <div class="font-label-sm text-on-surface-variant bg-white rounded-md p-sm border border-outline-variant mb-lg overflow-x-auto whitespace-nowrap">
+                                sk_live_<span class="text-primary">a8f2…91d4</span>
+                            </div>
+                            <ul class="space-y-md mb-xl flex-grow">
+                                <li class="flex items-center gap-sm font-body-md text-on-surface">
+                                    <span class="material-symbols-outlined text-primary" style="font-size: 18px;">check_circle</span> <span data-i18n="pricing.pro.f1">350M tokens</span>
+                                </li>
+                                <li class="flex items-center gap-sm font-body-md text-on-surface">
+                                    <span class="material-symbols-outlined text-primary" style="font-size: 18px;">check_circle</span> <span data-i18n="pricing.pro.f2">All 17+ models access</span>
+                                </li>
+                                <li class="flex items-center gap-sm font-body-md text-on-surface">
+                                    <span class="material-symbols-outlined text-primary" style="font-size: 18px;">check_circle</span> <span data-i18n="pricing.pro.f3">API Key Rotation</span>
+                                </li>
+                                <li class="flex items-center gap-sm font-body-md text-on-surface">
+                                    <span class="material-symbols-outlined text-primary" style="font-size: 18px;">check_circle</span> <span data-i18n="pricing.pro.f4">24h priority response</span>
+                                </li>
+                            </ul>
+                            <button class="w-full bg-[#FF6B35] text-white py-md rounded font-label-md hover:shadow-lg transition-all" id="buy-pro" data-i18n="pricing.pro.cta">Buy Pro</button>
+                        </div>
+                        <!-- Enterprise — dark, vertical stack, less list-y, more narrative -->
+                        <div class="bg-on-surface text-on-primary p-xl rounded-xl flex flex-col h-full">
+                            <p class="font-label-sm opacity-60 tracking-wider mb-xs" data-i18n="pricing.enterprise.name">Enterprise</p>
+                            <p class="font-body-sm opacity-70 mb-md" data-i18n="pricing.enterprise.tagline">For mission-critical workloads</p>
+                            <p class="font-headline-lg text-headline-lg mb-md">$300</p>
+                            <p class="font-body-md opacity-90 mb-xl" data-i18n="pricing.enterprise.pitch">A year of heavy use, with custom SLAs, dedicated support, and rollover credits. Talk to us about volume.</p>
+                            <ul class="space-y-sm mb-xl flex-grow text-sm">
+                                <li class="font-label-sm opacity-80" data-i18n="pricing.enterprise.f1">1.2B tokens</li>
+                                <li class="font-label-sm opacity-80" data-i18n="pricing.enterprise.f2">17+ models + Zhipu 24M+</li>
+                                <li class="font-label-sm opacity-80" data-i18n="pricing.enterprise.f3">12-month validity, 90% roll-over</li>
+                                <li class="font-label-sm opacity-80" data-i18n="pricing.enterprise.f4">24/7 dedicated support</li>
+                            </ul>
+                            <a href="contact.html" class="w-full inline-block text-center bg-[#FF6B35] text-white py-md rounded font-label-md hover:shadow-lg transition-all" id="buy-enterprise" data-i18n="pricing.enterprise.cta">Talk to sales</a>
+                        </div>
+                    </div>
+<div class="text-center mt-xl">
+<p class="text-secondary font-body-md"><span data-i18n="pricing.custom">Need a custom plan or high-volume discounts?</span> <a class="text-primary hover:underline underline-offset-4" href="contact.html" data-i18n="pricing.contact">Contact our sales team</a>.</p>
+</div>
+</div>
+</section>
+<!-- Section 4: FAQ Accordion -->
+<section class="py-xxl px-gutter bg-surface-container-low" id="faq">
+<div class="max-w-4xl mx-auto">
+        <div class="mb-xl">
+            <h2 class="font-headline-lg text-headline-lg" data-i18n="faq.title">Frequently Asked Questions</h2>
+        </div>
+                    <div class="space-y-base">
+                        <!-- FAQ 1 -->
+                        <details class="group bg-white border border-outline-variant rounded-lg">
+                            <summary class="flex justify-between items-center p-lg cursor-pointer select-none">
+                                <span class="font-headline-md text-on-surface group-open:text-primary transition-colors" data-i18n="faq.q1">How does TokenMaster save me 75% vs OpenAI?</span>
+                                <span class="material-symbols-outlined group-open:rotate-180 transition-transform">expand_more</span>
+                            </summary>
+                            <div class="px-lg pb-lg pt-base text-secondary font-body-md border-t border-outline-variant/50 mt-base" data-i18n="faq.a1">
+                                We aggregate demand across thousands of indie developers and route to the cheapest available provider (Zhipu GLM-4-Plus, DeepSeek, Qwen) at 25% of OpenAI's price. The same OpenAI-compatible API, the same model behavior — 75% off the bill.
+                            </div>
+                        </details>
+                        <details class="group bg-white border border-outline-variant rounded-lg">
+                            <summary class="flex justify-between items-center p-lg cursor-pointer select-none">
+                                <span class="font-headline-md text-on-surface group-open:text-primary transition-colors" data-i18n="faq.q2">Which AI models can I access?</span>
+                                <span class="material-symbols-outlined group-open:rotate-180 transition-transform">expand_more</span>
+                            </summary>
+                            <div class="px-lg pb-lg pt-base text-secondary font-body-md border-t border-outline-variant/50 mt-base" data-i18n="faq.a2">
+                                17+ models live: Zhipu GLM-4-Plus (with 24M+ free tokens for the Growth tier and above), DeepSeek-V3, Qwen-Max, GPT-4o, Claude 3.5 Sonnet, Gemini Pro 1.5, Mistral Large, Llama 3 70B, and more — all under one OpenAI-compatible endpoint.
+                            </div>
+                        </details>
+                        <details class="group bg-white border border-outline-variant rounded-lg">
+                            <summary class="flex justify-between items-center p-lg cursor-pointer select-none">
+                                <span class="font-headline-md text-on-surface group-open:text-primary transition-colors" data-i18n="faq.q3">Do I need to provide my own API key?</span>
+                                <span class="material-symbols-outlined group-open:rotate-180 transition-transform">expand_more</span>
+                            </summary>
+                            <div class="px-lg pb-lg pt-base text-secondary font-body-md border-t border-outline-variant/50 mt-base" data-i18n="faq.a3">
+                                No. Buy tokens on TokenMaster and you get one master key. Pass it as the `Authorization: Bearer` header and you have access to all 17+ models. No separate OpenAI / Anthropic / Zhipu accounts needed.
+                            </div>
+                        </details>
+                        <details class="group bg-white border border-outline-variant rounded-lg">
+                            <summary class="flex justify-between items-center p-lg cursor-pointer select-none">
+                                <span class="font-headline-md text-on-surface group-open:text-primary transition-colors" data-i18n="faq.q4">How do payments work?</span>
+                                <span class="material-symbols-outlined group-open:rotate-180 transition-transform">expand_more</span>
+                            </summary>
+                            <div class="px-lg pb-lg pt-base text-secondary font-body-md border-t border-outline-variant/50 mt-base" data-i18n="faq.a4">
+                                Two options: (1) <b>PayPal</b> — credit card, debit, PayPal balance, all major currencies. (2) <b>NOWPayments</b> — crypto, including USDT, USDC, BTC, ETH on Ethereum / TRON / Polygon. Payment confirms in seconds, tokens are issued to your account instantly. No subscription, no auto-debit.
+                            </div>
+                        </details>
+                        <details class="group bg-white border border-outline-variant rounded-lg">
+                            <summary class="flex justify-between items-center p-lg cursor-pointer select-none">
+                                <span class="font-headline-md text-on-surface group-open:text-primary transition-colors" data-i18n="faq.q5">Can I get a refund?</span>
+                                <span class="material-symbols-outlined group-open:rotate-180 transition-transform">expand_more</span>
+                            </summary>
+                            <div class="px-lg pb-lg pt-base text-secondary font-body-md border-t border-outline-variant/50 mt-base" data-i18n="faq.a5">
+                                Yes. Unused tokens are refundable within 14 days of purchase, no questions asked. Contact support@api-tokenmaster.com with your transaction ID. Used tokens are non-refundable, but your remaining balance carries over (see below).
+                            </div>
+                        </details>
+                        <details class="group bg-white border border-outline-variant rounded-lg">
+                            <summary class="flex justify-between items-center p-lg cursor-pointer select-none">
+                                <span class="font-headline-md text-on-surface group-open:text-primary transition-colors" data-i18n="faq.q6">What happens when my tokens run out or expire?</span>
+                                <span class="material-symbols-outlined group-open:rotate-180 transition-transform">expand_more</span>
+                            </summary>
+                            <div class="px-lg pb-lg pt-base text-secondary font-body-md border-t border-outline-variant/50 mt-base" data-i18n="faq.a6">
+                                When tokens run out, your API key returns 402 Payment Required — buy more and resume. Tokens are valid for 12 months from purchase date; any unused balance auto-renews for another 12 months with a 10% bonus credit (90% roll-over policy).
+                            </div>
+                        </details>
+                        <details class="group bg-white border border-outline-variant rounded-lg">
+                            <summary class="flex justify-between items-center p-lg cursor-pointer select-none">
+                                <span class="font-headline-md text-on-surface group-open:text-primary transition-colors" data-i18n="faq.q7">Is my data secure?</span>
+                                <span class="material-symbols-outlined group-open:rotate-180 transition-transform">expand_more</span>
+                            </summary>
+                            <div class="px-lg pb-lg pt-base text-secondary font-body-md border-t border-outline-variant/50 mt-base" data-i18n="faq.a7">
+                                Yes. All requests are TLS-encrypted end-to-end. We do not log prompt or completion content. We do not train on your data. Payment data goes to PayPal / NOWPayments — we never see your card or wallet. IP whitelisting is available on Pro and above.
+                            </div>
+                        </details>
+                        <details class="group bg-white border border-outline-variant rounded-lg">
+                            <summary class="flex justify-between items-center p-lg cursor-pointer select-none">
+                                <span class="font-headline-md text-on-surface group-open:text-primary transition-colors" data-i18n="faq.q8">How do I get started?</span>
+                                <span class="material-symbols-outlined group-open:rotate-180 transition-transform">expand_more</span>
+                            </summary>
+                            <div class="px-lg pb-lg pt-base text-secondary font-body-md border-t border-outline-variant/50 mt-base" data-i18n="faq.a8">
+                                Three steps. (1) Pick a plan above and pay via PayPal or crypto. (2) Get your master API key instantly via email. (3) Point your OpenAI SDK to <code class="text-primary">https://api-tokenmaster.com/v1</code> with the new key — that's it. Detailed setup guide in our docs after launch.
+                            </div>
+                        </details>
+                    </div>
+</div>
+</section>
+</main>
+<!-- Section 5: Footer -->
+<footer class="bg-surface-container-low border-t border-outline-variant pt-xxl pb-xl px-gutter">
+<div class="max-w-7xl mx-auto">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-xl mb-xxl">
+<div class="lg:col-span-4">
+<span class="font-headline-md text-on-surface font-bold">TokenMaster</span>
+<p class="text-secondary font-body-md mt-md max-w-xs">Empowering indie developers with high-performance, low-cost AI infrastructure. The future of AI is unified.</p>
+<p class="text-secondary font-label-sm mt-lg">© 2026 TokenMaster AI. All rights reserved.</p>
+</div>
+                <div class="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-lg">
+                    <div class="space-y-md">
+                        <h4 class="font-label-md text-on-surface font-bold uppercase tracking-wider" data-i18n="footer.product">Product</h4>
+                        <ul class="space-y-sm text-secondary font-body-md">
+                            <li class=""><a class="hover:text-primary" href="#features" data-i18n="nav.features">Features</a></li>
+                            <li class=""><a class="hover:text-primary" href="#pricing" data-i18n="nav.pricing">Pricing</a></li>
+                            <li class=""><a class="hover:text-primary" href="models.html" data-i18n="footer.models">Models</a></li>
+                        </ul>
+                    </div>
+                    <div class="space-y-md">
+                        <h4 class="font-label-md text-on-surface font-bold uppercase tracking-wider" data-i18n="footer.resources">Resources</h4>
+                        <ul class="space-y-sm text-secondary font-body-md">
+                            <li class=""><a class="hover:text-primary" href="docs.html" data-i18n="footer.docs">Documentation</a></li>
+                            <li class=""><a class="hover:text-primary" href="docs-api.html" data-i18n="footer.apiref">API Ref</a></li>
+                            <li class=""><a class="hover:text-primary" href="#faq" data-i18n="nav.faq">FAQ</a></li>
+                        </ul>
+                    </div>
+                    <div class="space-y-md">
+                        <h4 class="font-label-md text-on-surface font-bold uppercase tracking-wider" data-i18n="footer.company">Company</h4>
+                        <ul class="space-y-sm text-secondary font-body-md">
+                            <li class=""><a class="hover:text-primary" href="about.html" data-i18n="footer.about">About</a></li>
+                            <li class=""><a class="hover:text-primary" href="contact.html" data-i18n="footer.contact">Contact</a></li>
+                            <li class=""><a class="text-on-surface-variant opacity-50 cursor-not-allowed" href="javascript:void(0)" title="Blog coming soon" data-i18n="footer.blog">Blog</a></li>
+                        </ul>
+                    </div>
+                    <div class="space-y-md">
+                        <h4 class="font-label-md text-on-surface font-bold uppercase tracking-wider" data-i18n="footer.legal">Legal</h4>
+                        <ul class="space-y-sm text-secondary font-body-md">
+                            <li class=""><a class="hover:text-primary" href="privacy.html" data-i18n="footer.privacy">Privacy</a></li>
+                            <li class=""><a class="hover:text-primary" href="terms.html" data-i18n="footer.terms">Terms</a></li>
+                            <li class=""><a class="text-on-surface-variant opacity-50 cursor-not-allowed" href="javascript:void(0)" title="Status page coming soon" data-i18n="footer.status">Status</a></li>
+                        </ul>
+                    </div>
+                </div>
+<div class="lg:col-span-2 flex justify-start lg:justify-end gap-md">
+<a class="w-10 h-10 border border-outline-variant opacity-40 cursor-not-allowed flex items-center justify-center rounded-lg" href="javascript:void(0)" title="X (Twitter) — coming soon" aria-label="X (Twitter)">
+<span class="material-symbols-outlined">1k</span>
+</a>
+<a class="w-10 h-10 border border-outline-variant opacity-40 cursor-not-allowed flex items-center justify-center rounded-lg" href="javascript:void(0)" title="GitHub — coming soon" aria-label="GitHub">
+<span class="material-symbols-outlined">terminal</span>
+</a>
+<a class="w-10 h-10 border border-outline-variant opacity-40 cursor-not-allowed flex items-center justify-center rounded-lg" href="javascript:void(0)" title="Discord — coming soon" aria-label="Discord">
+<span class="material-symbols-outlined">chat</span>
+</a>
+</div>
+</div>
+<div class="border-t border-outline-variant pt-lg flex flex-col md:row justify-between items-center gap-md">
+<div class="flex items-center gap-lg text-secondary font-label-sm">
+<a class="hover:text-primary" href="privacy.html" data-i18n="footer.privacy">Privacy Policy</a>
+<a class="hover:text-primary" href="terms.html" data-i18n="footer.terms">Terms of Service</a>
+<a class="hover:text-primary" href="javascript:void(0)" onclick="localStorage.removeItem('tm_lang'); location.reload();" data-i18n="footer.cookie">Cookie Settings</a>
+</div>
+<div class="flex items-center gap-sm text-secondary font-label-sm">
+<span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    All Systems Operational
+                </div>
+</div>
+</div>
+</footer>
+    <script>
+        // ============ I18N ============
+        const I18N = {
+            en: {
+                'nav.features': 'Features',
+                'nav.pricing': 'Pricing',
+                'nav.faq': 'FAQ',
+                'nav.docs': 'Docs',
+                'nav.cta': 'Get Tokens',
+                'hero.title': 'One API key. <span class="text-primary">17+</span> AI models. <span class="text-primary-container">75%</span> off OpenAI.',
+                'hero.subtitle': 'TokenMaster is the cheap AI token gateway for indie developers. Same OpenAI-compatible API, pay 75% less. 17+ models including Zhipu GLM-4-Plus, DeepSeek, Qwen, GPT-4, Claude \u2014 all in one key.',
+                'hero.models': '17+',
+                'hero.discount': '75%',
+                'hero.cta': 'Get 100M tokens for $30',
+                'hero.cta2': 'See pricing',
+                'hero.stat1': 'Zhipu Free Tokens',
+                'hero.stat2': 'AI Models Live',
+                'hero.stat3': 'Uptime SLA',
+                'features.label': '',
+                'features.title': 'Built for the next 1,000 ships.',
+                'features.gateway.title': 'Unified Multi-Model Gateway',
+                'features.gateway.desc': 'Drop-in OpenAI compatibility. Switch between Llama, Claude, and GPT-4 with a single parameter change. No more SDK bloat.',
+                'features.security.title': 'Enterprise Security',
+                'features.security.desc': 'Hardened endpoints featuring AES-256 encryption, cryptographic signatures, and granular IP Whitelisting.',
+                'features.payg.title': 'Pay-as-you-go',
+                'features.payg.desc': 'No monthly minimums. No seat costs. Buy credits, use them until they\u2019re gone. Full transparency in the console.',
+                'features.models.title': '17+ AI Models, Real-time',
+                'features.models.desc': 'Zhipu GLM-4-Plus (24M+ free tokens), DeepSeek-V3, Qwen-Max, GPT-4o, Claude 3.5, Gemini Pro, Mistral Large, Llama 3. Route by cost or latency \u2014 all under one OpenAI-compatible key.',
+                'pricing.title': 'Simple, predictable pricing.',
+                'pricing.subtitle': 'Scale from zero to millions of tokens without breaking the bank.',
+                'pricing.starter.name': 'Starter',
+                'pricing.starter.f1': '30M tokens',
+                'pricing.starter.f2': '3 base models (DeepSeek / Qwen / Zhipu)',
+                'pricing.starter.f3': 'PayPal payment',
+                'pricing.starter.f4': 'Standard email support',
+                'pricing.starter.cta': 'Buy Starter',
+                'pricing.starter.tagline': 'For first-time builders',
+                'pricing.growth.name': 'Growth',
+                'pricing.growth.badge': '\u00a0 \u00a0Most\u00a0 \u00a0 Popular',
+                'pricing.growth.f1': '100M tokens',
+                'pricing.growth.f2': 'All 17+ models access',
+                'pricing.growth.f3': 'PayPal + NOWPayments (USDT/USDC/BTC/ETH)',
+                'pricing.growth.f4': 'Zhipu GLM-4-Plus 24M+ free',
+                'pricing.growth.f5': 'Usage Dashboard',
+                'pricing.growth.cta': 'Buy Growth',
+                'pricing.growth.tagline': 'For shipping products',
+                'pricing.pro.name': 'Pro',
+                'pricing.pro.f1': '350M tokens',
+                'pricing.pro.f2': 'All 17+ models access',
+                'pricing.pro.f3': 'API Key Rotation',
+                'pricing.pro.f4': 'Priority support (24h response)',
+                'pricing.pro.cta': 'Buy Pro',
+                'pricing.pro.tagline': 'For teams at scale',
+                'pricing.enterprise.name': 'Enterprise',
+                'pricing.enterprise.f1': '1.2B tokens',
+                'pricing.enterprise.f2': 'All 17+ models + Zhipu GLM-4-Plus',
+                'pricing.enterprise.f3': '12-month validity + 90% rollover',
+                'pricing.enterprise.f4': '24/7 dedicated support',
+                'pricing.enterprise.cta': 'Talk to sales',
+                'pricing.enterprise.tagline': 'For mission-critical workloads',
+                'pricing.enterprise.pitch': 'A year of heavy use, with custom SLAs, dedicated support, and rollover credits. Talk to us about volume.',
+                'pricing.custom': 'Need a custom plan or high-volume discounts?',
+                'pricing.contact': 'Contact our sales team',
+                'faq.title': 'Frequently Asked Questions',
+                'faq.q1': 'How does TokenMaster save me 75% vs OpenAI?',
+                'faq.a1': 'We aggregate demand across thousands of indie developers and route to the cheapest available provider (Zhipu GLM-4-Plus, DeepSeek, Qwen) at 25% of OpenAI\u2019s price. The same OpenAI-compatible API, the same model behavior \u2014 75% off the bill.',
+                'faq.q2': 'Which AI models can I access?',
+                'faq.a2': '17+ models live: Zhipu GLM-4-Plus (with 24M+ free tokens for the Growth tier and above), DeepSeek-V3, Qwen-Max, GPT-4o, Claude 3.5 Sonnet, Gemini Pro 1.5, Mistral Large, Llama 3 70B, and more \u2014 all under one OpenAI-compatible endpoint.',
+                'faq.q3': 'Do I need to provide my own API key?',
+                'faq.a3': 'No. Buy tokens on TokenMaster and you get one master key. Pass it as the <code>Authorization: Bearer</code> header and you have access to all 17+ models. No separate OpenAI / Anthropic / Zhipu accounts needed.',
+                'faq.q4': 'How do payments work?',
+                'faq.a4': 'Two options: (1) <b>PayPal</b> \u2014 credit card, debit, PayPal balance, all major currencies. (2) <b>NOWPayments</b> \u2014 crypto, including USDT, USDC, BTC, ETH on Ethereum / TRON / Polygon. Payment confirms in seconds, tokens are issued to your account instantly. No subscription, no auto-debit.',
+                'faq.q5': 'Can I get a refund?',
+                'faq.a5': 'Yes. Unused tokens are refundable within 14 days of purchase, no questions asked. Contact support@api-tokenmaster.com with your transaction ID. Used tokens are non-refundable, but your remaining balance carries over (see below).',
+                'faq.q6': 'What happens when my tokens run out or expire?',
+                'faq.a6': 'When tokens run out, your API key returns 402 Payment Required \u2014 buy more and resume. Tokens are valid for 12 months from purchase date; any unused balance auto-renews for another 12 months with a 10% bonus credit (90% roll-over policy).',
+                'faq.q7': 'Is my data secure?',
+                'faq.a7': 'Yes. All requests are TLS-encrypted end-to-end. We do not log prompt or completion content. We do not train on your data. Payment data goes to PayPal / NOWPayments \u2014 we never see your card or wallet. IP whitelisting is available on Pro and above.',
+                'faq.q8': 'How do I get started?',
+                'faq.a8': 'Three steps. (1) Pick a plan above and pay via PayPal or crypto. (2) Get your master API key instantly via email. (3) Point your OpenAI SDK to <code>https://api-tokenmaster.com/v1</code> with the new key \u2014 that\u2019s it. Detailed setup guide in our docs after launch.',
+                'footer.product': 'Product',
+                'footer.models': 'Models',
+                'footer.resources': 'Resources',
+                'footer.docs': 'Documentation',
+                'footer.apiref': 'API Ref',
+                'footer.company': 'Company',
+                'footer.about': 'About',
+                'footer.contact': 'Contact',
+                'footer.blog': 'Blog',
+                'footer.legal': 'Legal',
+                'footer.privacy': 'Privacy',
+                'footer.terms': 'Terms',
+                'footer.status': 'Status',
+                'footer.cookie': 'Cookie Settings'
+            },
+            zh: {
+                'nav.features': '功能',
+                'nav.pricing': '价格',
+                'nav.faq': '常见问题',
+                'nav.docs': '文档',
+                'nav.cta': '立即购买',
+                'hero.title': '一个 API 密钥, <span class="text-primary">17+</span> AI 模型, 比 OpenAI 便宜 <span class="text-primary-container">75%</span>。',
+                'hero.subtitle': 'TokenMaster 是独立开发者的廉价 AI token 网关。同样的 OpenAI 兼容 API,价格便宜 75%。一个密钥接入智谱 GLM-4-Plus、DeepSeek、Qwen、GPT-4、Claude 等 17+ 模型。',
+                'hero.models': '17+',
+                'hero.discount': '75%',
+                'hero.cta': '30 美元购买 1 亿 tokens',
+                'hero.cta2': '查看价格',
+                'hero.stat1': '智谱免费 tokens',
+                'hero.stat2': 'AI 模型在线',
+                'hero.stat3': '正常运行 SLA',
+                'features.label': '',
+                'features.title': '为未来 1,000 次发布而生。',
+                'features.gateway.title': '统一多模型网关',
+                'features.gateway.desc': '即插即用的 OpenAI 兼容性。只需切换一个参数,即可在 Llama、Claude、GPT-4 之间切换,不再有 SDK 膨胀。',
+                'features.security.title': '企业级安全',
+                'features.security.desc': '加固端点,具备 AES-256 加密、加密签名、IP 白名单等细粒度访问控制。',
+                'features.payg.title': '按需付费',
+                'features.payg.desc': '没有月最低消费,没有席位费。购买额度,用到完为止,控制台完全透明。',
+                'features.models.title': '17+ AI 模型,实时接入',
+                'features.models.desc': '智谱 GLM-4-Plus (24M+ 免费 tokens)、DeepSeek-V3、Qwen-Max、GPT-4o、Claude 3.5、Gemini Pro、Mistral Large、Llama 3。按成本或延迟路由,全部一个 OpenAI 兼容密钥搞定。',
+                'pricing.title': '简单、可预测的定价。',
+                'pricing.subtitle': '从零到百万级 tokens 自由扩展,成本可控。',
+                'pricing.starter.name': '入门版',
+                'pricing.starter.f1': '30M tokens',
+                'pricing.starter.f2': '3 个基础模型 (DeepSeek / Qwen / 智谱)',
+                'pricing.starter.f3': 'PayPal 支付',
+                'pricing.starter.f4': '标准邮件支持',
+                'pricing.starter.cta': '购买入门版',
+                'pricing.starter.tagline': '适合首次上线的开发者',
+                'pricing.growth.name': '成长版',
+                'pricing.growth.badge': '\u00a0 \u00a0最受欢迎\u00a0 \u00a0',
+                'pricing.growth.f1': '100M tokens',
+                'pricing.growth.f2': '17+ 模型全部接入',
+                'pricing.growth.f3': 'PayPal + NOWPayments (USDT/USDC/BTC/ETH)',
+                'pricing.growth.f4': '智谱 GLM-4-Plus 24M+ 免费',
+                'pricing.growth.f5': '使用情况仪表板',
+                'pricing.growth.cta': '购买成长版',
+                'pricing.growth.tagline': '适合正在上线产品的团队',
+                'pricing.pro.name': '专业版',
+                'pricing.pro.f1': '350M tokens',
+                'pricing.pro.f2': '17+ 模型全部接入',
+                'pricing.pro.f3': 'API 密钥轮换',
+                'pricing.pro.f4': '优先支持 (24 小时响应)',
+                'pricing.pro.cta': '购买专业版',
+                'pricing.pro.tagline': '适合规模化团队',
+                'pricing.enterprise.name': '企业版',
+                'pricing.enterprise.f1': '1.2B tokens',
+                'pricing.enterprise.f2': '17+ 模型 + 智谱 GLM-4-Plus',
+                'pricing.enterprise.f3': '12 个月有效期 + 90% 顺延',
+                'pricing.enterprise.f4': '7\u00d724 专属客服',
+                'pricing.enterprise.cta': '联系销售',
+                'pricing.enterprise.tagline': '适合关键业务负载',
+                'pricing.enterprise.pitch': '一年重度使用,定制 SLA、专属客服、tokens 顺延。请与我们沟通批量采购。',
+                'pricing.custom': '需要定制方案或大批量折扣?',
+                'pricing.contact': '联系销售团队',
+                'faq.title': '常见问题',
+                'faq.q1': 'TokenMaster 如何比 OpenAI 便宜 75%?',
+                'faq.a1': '我们聚合数千名独立开发者的需求,路由到最便宜的可用供应商 (智谱 GLM-4-Plus、DeepSeek、Qwen),价格仅为 OpenAI 的 25%。同样的 OpenAI 兼容 API、同样的模型行为,账单立省 75%。',
+                'faq.q2': '我可以接入哪些 AI 模型?',
+                'faq.a2': '17+ 模型在线: 智谱 GLM-4-Plus (成长版及以上有 24M+ 免费 tokens)、DeepSeek-V3、Qwen-Max、GPT-4o、Claude 3.5 Sonnet、Gemini Pro 1.5、Mistral Large、Llama 3 70B 等,全部一个 OpenAI 兼容端点。',
+                'faq.q3': '我需要提供自己的 API 密钥吗?',
+                'faq.a3': '不需要。在 TokenMaster 购买 tokens,即可获得一个主密钥。将其作为 <code>Authorization: Bearer</code> 请求头传入,即可访问全部 17+ 模型,无需单独的 OpenAI / Anthropic / 智谱账户。',
+                'faq.q4': '支付方式有哪些?',
+                'faq.a4': '两种方式: (1) <b>PayPal</b> \u2014 信用卡、借记卡、PayPal 余额,所有主要货币。 (2) <b>NOWPayments</b> \u2014 加密货币,支持 USDT、USDC、BTC、ETH,可走 Ethereum / TRON / Polygon 网络。支付秒级确认,tokens 立即入账,无订阅、无自动扣费。',
+                'faq.q5': '可以退款吗?',
+                'faq.a5': '可以。购买后 14 天内未使用的 tokens 可无理由退款,请联系 support@api-tokenmaster.com 并提供交易 ID。已使用的 tokens 不可退款,但剩余余额可结转 (见下文)。',
+                'faq.q6': 'tokens 用完或过期怎么办?',
+                'faq.a6': 'tokens 用完后,您的 API 密钥会返回 402 Payment Required \u2014 购买更多即可继续使用。tokens 自购买日起 12 个月内有效;任何未使用的余额会自动续期 12 个月,赠送 10% 奖励额度 (90% 顺延政策)。',
+                'faq.q7': '我的数据安全吗?',
+                'faq.a7': '是的。所有请求均端到端 TLS 加密。我们不记录 prompt 或 completion 内容,不用您的数据训练。支付数据走 PayPal / NOWPayments,我们看不到您的卡或钱包。专业版及以上支持 IP 白名单。',
+                'faq.q8': '我该如何开始?',
+                'faq.a8': '三步: (1) 选择上方套餐,通过 PayPal 或加密货币支付。 (2) 立即通过邮件收到主 API 密钥。 (3) 将您的 OpenAI SDK 的 baseURL 指向 <code>https://api-tokenmaster.com/v1</code> 并使用新密钥,搞定。详细设置指南见我们的文档 (上线后提供)。',
+                'footer.product': '产品',
+                'footer.models': '模型',
+                'footer.resources': '资源',
+                'footer.docs': '文档',
+                'footer.apiref': 'API 参考',
+                'footer.company': '公司',
+                'footer.about': '关于我们',
+                'footer.contact': '联系我们',
+                'footer.blog': '博客',
+                'footer.legal': '法律',
+                'footer.privacy': '隐私',
+                'footer.terms': '条款',
+                'footer.status': '状态',
+                'footer.cookie': 'Cookie 设置'
+            }
+        };
+
+        // ============ I18N APPLY ============
+        function applyLang(lang) {
+            const dict = I18N[lang] || I18N.en;
+            document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                const val = dict[key];
+                if (val !== undefined) {
+                    if (/<[a-z][^>]*>/i.test(val)) {
+                        el.innerHTML = val;
+                    } else {
+                        el.textContent = val;
+                    }
+                }
+            });
+            try { localStorage.setItem('tm_lang', lang); } catch (e) {}
+            const lbl = document.getElementById('lang-toggle-label');
+            if (lbl) lbl.textContent = lang === 'zh' ? '中' : 'EN';
+        }
+
+        // ============ SCROLL SPY ============
+        window.addEventListener('scroll', () => {
+            const sections = ['features', 'pricing', 'faq'];
+            const navLinks = document.querySelectorAll('header nav div.hidden a');
+
+            let current = '';
+            sections.forEach(section => {
+                const element = document.getElementById(section);
+                if (element && window.scrollY >= (element.offsetTop - 100)) {
+                    current = section;
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('text-primary', 'font-bold', 'border-b-2', 'border-primary');
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.classList.add('text-primary', 'font-bold');
+                }
+            });
+        });
+
+        // ============ CTA WIRE ============
+        (function wireCheckout() {
+            const skuMap = {
+                'cta-hero-main': 'growth',
+                'buy-starter': 'starter',
+                'buy-growth': 'growth',
+                'buy-pro': 'pro',
+                'buy-enterprise': 'enterprise'
+            };
+            Object.entries(skuMap).forEach(([id, sku]) => {
+                const btn = document.getElementById(id);
+                if (!btn) return;
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.location.href = '/checkout?sku=' + sku;
+                });
+            });
+        })();
+
+        // ============ LANG TOGGLE + INIT ============
+        (function initLang() {
+            let saved = 'en';
+            try {
+                const stored = localStorage.getItem('tm_lang');
+                if (stored && (stored === 'en' || stored === 'zh')) saved = stored;
+                else if (navigator.language && navigator.language.toLowerCase().startsWith('zh')) saved = 'zh';
+            } catch (e) {}
+            applyLang(saved);
+            const toggle = document.getElementById('lang-toggle');
+            if (toggle) {
+                toggle.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const cur = (document.documentElement.lang || 'en').startsWith('zh') ? 'zh' : 'en';
+                    applyLang(cur === 'zh' ? 'en' : 'zh');
+                });
+            }
+        })();
+    </script>
+
+
+</body></html>
