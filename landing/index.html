@@ -627,10 +627,22 @@
                 'footer.contact': 'Contact',
                 'footer.blog': 'Blog',
                 'footer.legal': 'Legal',
-                'footer.privacy': 'Privacy',
+'footer.privacy': 'Privacy',
                 'footer.terms': 'Terms',
                 'footer.status': 'Status',
                 'footer.cookie': 'Cookie Settings',
+                'checkout.title': 'Buy tokens',
+                'checkout.email': 'Email',
+                'checkout.email_ph': '[email protected]',
+                'checkout.method': 'Payment method',
+                'checkout.method_paypal': 'PayPal (credit card, debit, PayPal balance)',
+                'checkout.method_nowpayments': 'NOWPayments (USDT / USDC / BTC / ETH)',
+                'checkout.continue': 'Pay ${usd} & continue',
+                'checkout.submitting': 'Creating order...',
+                'checkout.redirecting': 'Redirecting to payment...',
+                'checkout.error_prefix': 'Failed to create order:',
+                'checkout.error_no_url': 'No payment_url in response',
+                'checkout.footnote': 'Tokens are issued to your account instantly after payment. 14-day refund on unused tokens.',
             },
             zh: {
                 'nav.features': '功能',
@@ -725,7 +737,19 @@
                 'footer.privacy': '隐私',
                 'footer.terms': '条款',
                 'footer.status': '状态',
-                'footer.cookie': 'Cookie 设置',
+'footer.cookie': 'Cookie 设置',
+                'checkout.title': '购买 tokens',
+                'checkout.email': '邮箱',
+                'checkout.email_ph': '[email protected]',
+                'checkout.method': '支付方式',
+                'checkout.method_paypal': 'PayPal (信用卡、借记卡、PayPal 余额)',
+                'checkout.method_nowpayments': 'NOWPayments (USDT / USDC / BTC / ETH 加密货币)',
+                'checkout.continue': '支付 ${usd} 美元并继续',
+                'checkout.submitting': '正在创建订单...',
+                'checkout.redirecting': '正在跳转到支付页...',
+                'checkout.error_prefix': '创建订单失败:',
+                'checkout.error_no_url': '响应中没有 payment_url',
+                'checkout.footnote': '支付完成后 tokens 立即到账。未使用的 tokens 支持 14 天无理由退款。',
             }
         };
         if (typeof window !== 'undefined') window.I18N = I18N;
@@ -775,7 +799,7 @@
             });
         });
 
-// ============ CTA WIRE -> Checkout Modal ============
+        // ============ CTA WIRE -> Checkout Modal ============
         (function wireCheckout() {
             const skuMap = {
                 'cta-hero-main': 'starter_v6',
@@ -784,16 +808,30 @@
                 'buy-pro': 'team_v6'
                 // 'buy-enterprise' keeps its native link to /contact.html
             };
-            const skuLabel = {
-                'starter_v6': 'Starter · $15 / 20M tokens',
-                'indie_v6':   'Indie · $35 / 50M tokens',
-                'team_v6':    'Team · $80 / 150M tokens'
-            };
             const skuPrice = {
                 'starter_v6': 15,
                 'indie_v6': 35,
                 'team_v6': 80
             };
+            function getCurrentLang() {
+                return (document.documentElement.lang || 'en').startsWith('zh') ? 'zh' : 'en';
+            }
+            function t(key) {
+                const lang = getCurrentLang();
+                return (I18N[lang] && I18N[lang][key]) || (I18N.en && I18N.en[key]) || key;
+            }
+            function skuLabel(sku) {
+                const lang = getCurrentLang();
+                if (lang === 'zh') {
+                    if (sku === 'starter_v6') return '入门版 · $15 / 20M tokens';
+                    if (sku === 'indie_v6')   return '独立版 · $35 / 50M tokens';
+                    if (sku === 'team_v6')    return '团队版 · $80 / 150M tokens';
+                }
+                if (sku === 'starter_v6') return 'Starter · $15 / 20M tokens';
+                if (sku === 'indie_v6')   return 'Indie · $35 / 50M tokens';
+                if (sku === 'team_v6')    return 'Team · $80 / 150M tokens';
+                return sku;
+            }
             Object.entries(skuMap).forEach(([id, sku]) => {
                 const btn = document.getElementById(id);
                 if (!btn) return;
@@ -804,8 +842,20 @@
             });
 
             function openCheckoutModal(sku) {
-                const skuText = skuLabel[sku] || sku;
+                const skuText = skuLabel(sku);
                 const skuUsd = skuPrice[sku] || 0;
+                const titleText = t('checkout.title');
+                const emailLabel = t('checkout.email');
+                const emailPh = t('checkout.email_ph');
+                const methodLabel = t('checkout.method');
+                const paypalOpt = t('checkout.method_paypal');
+                const npOpt = t('checkout.method_nowpayments');
+                const btnText = t('checkout.continue').replace('{usd}', String(skuUsd));
+                const submittingText = t('checkout.submitting');
+                const redirectingText = t('checkout.redirecting');
+                const errPrefix = t('checkout.error_prefix');
+                const errNoUrl = t('checkout.error_no_url');
+                const footnote = t('checkout.footnote');
                 const overlay = document.createElement('div');
                 overlay.id = 'checkout-overlay';
                 overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -813,26 +863,26 @@
                     <div style="background:white;border-radius:16px;max-width:480px;width:100%;padding:32px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
                         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:24px;">
                             <div>
-                                <h2 style="font-size:24px;font-weight:700;margin:0 0 4px 0;color:#1a1a1a;">Buy tokens</h2>
+                                <h2 style="font-size:24px;font-weight:700;margin:0 0 4px 0;color:#1a1a1a;">${titleText}</h2>
                                 <p style="font-size:14px;color:#666;margin:0;">${skuText}</p>
                             </div>
-                            <button id="checkout-close" type="button" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;padding:0;width:32px;height:32px;line-height:1;">×</button>
+                            <button id="checkout-close" type="button" aria-label="Close" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;padding:0;width:32px;height:32px;line-height:1;">×</button>
                         </div>
                         <form id="checkout-form" style="display:flex;flex-direction:column;gap:16px;">
                             <label style="display:flex;flex-direction:column;gap:6px;">
-                                <span style="font-size:14px;font-weight:600;color:#333;">Email <span style="color:#d44;">*</span></span>
-                                <input type="email" name="email" required placeholder="[email protected]" style="padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:15px;outline:none;" />
+                                <span style="font-size:14px;font-weight:600;color:#333;">${emailLabel} <span style="color:#d44;">*</span></span>
+                                <input type="email" name="email" required placeholder="${emailPh}" style="padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:15px;outline:none;" />
                             </label>
                             <label style="display:flex;flex-direction:column;gap:6px;">
-                                <span style="font-size:14px;font-weight:600;color:#333;">Payment method <span style="color:#d44;">*</span></span>
+                                <span style="font-size:14px;font-weight:600;color:#333;">${methodLabel} <span style="color:#d44;">*</span></span>
                                 <select name="payment_method" required style="padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:15px;outline:none;background:white;">
-                                    <option value="paypal">PayPal (credit card, debit, PayPal balance)</option>
-                                    <option value="nowpayments">NOWPayments (USDT / USDC / BTC / ETH)</option>
+                                    <option value="paypal">${paypalOpt}</option>
+                                    <option value="nowpayments">${npOpt}</option>
                                 </select>
                             </label>
                             <div id="checkout-error" style="display:none;color:#d44;font-size:14px;background:#fef2f2;border:1px solid #fecaca;padding:10px 12px;border-radius:8px;"></div>
-                            <button type="submit" id="checkout-submit" style="background:#FF6B35;color:white;border:none;padding:14px;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;margin-top:8px;">Pay $${skuUsd} & continue</button>
-                            <p style="font-size:12px;color:#888;margin:0;text-align:center;">Tokens are issued to your account instantly after payment. 14-day refund on unused tokens.</p>
+                            <button type="submit" id="checkout-submit" style="background:#FF6B35;color:white;border:none;padding:14px;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;margin-top:8px;">${btnText}</button>
+                            <p style="font-size:12px;color:#888;margin:0;text-align:center;">${footnote}</p>
                         </form>
                     </div>
                 `;
@@ -848,7 +898,7 @@
                     const errBox = document.getElementById('checkout-error');
                     errBox.style.display = 'none';
                     submit.disabled = true;
-                    submit.textContent = 'Creating order...';
+                    submit.textContent = submittingText;
                     try {
                         const resp = await fetch('/create-order', {
                             method: 'POST',
@@ -860,15 +910,15 @@
                             throw new Error(data.detail || ('HTTP ' + resp.status));
                         }
                         if (!data.payment_url) {
-                            throw new Error('No payment_url in response');
+                            throw new Error(errNoUrl);
                         }
-                        submit.textContent = 'Redirecting to payment...';
+                        submit.textContent = redirectingText;
                         window.location.href = data.payment_url;
                     } catch (err) {
-                        errBox.textContent = 'Failed to create order: ' + err.message;
+                        errBox.textContent = errPrefix + ' ' + err.message;
                         errBox.style.display = 'block';
                         submit.disabled = false;
-                        submit.textContent = 'Pay $' + skuUsd + ' & continue';
+                        submit.textContent = btnText;
                     }
                 };
             }
