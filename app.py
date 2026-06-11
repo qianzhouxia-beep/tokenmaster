@@ -207,7 +207,7 @@ def _nowpayments_create_payment(sku, email, order_id):
         "order_id": order_id,
         "order_description": sku["label"],
         "ipn_callback_url": os.environ.get(
-            "NOWPAYMENTS_IPN_URL", "https://api-tokenmaster.com/nowpayments-webhook"
+            "NOWPAYMENTS_IPN_URL", "https://pay.api-tokenmaster.com/nowpayments-webhook"
         ),
         "email": email,
     }
