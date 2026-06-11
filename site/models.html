@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en" style="scroll-smooth">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Models — TokenMaster</title>
+<meta name="description" content="17+ AI models on TokenMaster: GPT-4o, Claude 3.5, Gemini Pro, Zhipu GLM-4-Plus, DeepSeek, Qwen, Mistral, Llama 3.">
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"></noscript>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<style>
+:root { --primary: #ab3500; --primary-container: #ff6b35; --surface: #fff8f6; --on-surface: #261814; --secondary: #5f5e5e; --outline-variant: #e1bfb5; --surface-container-low: #fff1ed; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--surface); color: var(--on-surface); line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
+header { background: var(--surface); border-bottom: 1px solid var(--outline-variant); position: sticky; top: 0; z-index: 50; backdrop-filter: blur(8px); }
+nav { max-width: 1200px; margin: 0 auto; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; }
+.logo { display: flex; align-items: center; gap: 8px; font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 20px; color: var(--on-surface); text-decoration: none; }
+.nav-links { display: flex; gap: 32px; }
+.nav-links a { color: var(--secondary); text-decoration: none; font-size: 16px; font-weight: 500; transition: color 0.2s; }
+.nav-links a:hover, .nav-links a.active { color: var(--primary); }
+.lang-toggle { display: flex; align-items: center; gap: 4px; padding: 6px 12px; border: 1px solid var(--outline-variant); border-radius: 9999px; background: transparent; color: var(--secondary); font-family: "JetBrains Mono", monospace; font-size: 12px; font-weight: 500; cursor: pointer; }
+.lang-toggle:hover { border-color: var(--primary); color: var(--primary); }
+.cta-btn { background: var(--primary-container); color: #fff; padding: 8px 20px; border-radius: 6px; font-family: "JetBrains Mono", monospace; font-size: 14px; font-weight: 500; text-decoration: none; }
+.cta-btn:hover { background: var(--primary); }
+main { flex: 1; max-width: 1200px; margin: 0 auto; padding: 64px 32px; width: 100%; }
+h1 { font-family: "Space Grotesk", sans-serif; font-size: 48px; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 16px; }
+.lead { font-size: 20px; color: var(--secondary); margin-bottom: 48px; max-width: 700px; }
+.model-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.model-card { background: #fff; border: 1px solid var(--outline-variant); border-radius: 12px; padding: 24px; transition: all 0.2s; }
+.model-card:hover { border-color: var(--primary); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04); }
+.model-card .provider { font-family: "JetBrains Mono", monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary); margin-bottom: 4px; }
+.model-card .name { font-family: "Space Grotesk", sans-serif; font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+.model-card .id { font-family: "JetBrains Mono", monospace; font-size: 13px; color: var(--primary); margin-bottom: 12px; }
+.model-card .meta { display: flex; gap: 12px; font-size: 13px; color: var(--secondary); flex-wrap: wrap; }
+.model-card .meta span { background: var(--surface-container-low); padding: 2px 8px; border-radius: 4px; }
+.badge { display: inline-block; background: var(--primary); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; font-family: "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: 0.05em; margin-left: 8px; }
+.section-h2 { font-family: "Space Grotesk", sans-serif; font-size: 32px; font-weight: 600; margin: 48px 0 16px; }
+footer { background: var(--surface-container-low); border-top: 1px solid var(--outline-variant); padding: 32px; text-align: center; font-size: 14px; color: var(--secondary); }
+footer a { color: var(--primary); text-decoration: none; margin: 0 12px; }
+.material-symbols-outlined { font-family: "Material Symbols Outlined", "Apple Color Emoji", "Segoe UI Emoji", sans-serif; font-weight: normal; font-style: normal; font-size: 18px; vertical-align: middle; }
+@media (max-width: 768px) { .nav-links { display: none; } h1 { font-size: 32px; } main { padding: 32px 20px; } .model-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+<nav>
+<a class="logo" href="landing.html"><img src="assets/logo.png" alt="TokenMaster" style="height: 40px; width: auto; max-width: 200px; object-fit: contain; display: block;">TokenMaster</a>
+<div class="nav-links">
+<a href="landing.html#features">Features</a>
+<a href="landing.html#pricing">Pricing</a>
+<a href="landing.html#faq">FAQ</a>
+<a href="docs.html">Docs</a>
+</div>
+<div style="display: flex; align-items: center; gap: 12px;">
+<button class="lang-toggle" id="lang-toggle" type="button" aria-label="Switch language">
+<span class="material-symbols-outlined" style="font-size: 16px;">public</span>
+<span id="lang-toggle-label">EN</span>
+</button>
+<a class="cta-btn" href="landing.html">Get Tokens</a>
+</div>
+</nav>
+</header>
+<main>
+<h1 data-i18n="models.h1">All Models</h1>
+<p class="lead" data-i18n="models.lead">17+ AI models live on TokenMaster. One master key, OpenAI-compatible API. Use any model id in the <code>model</code> field.</p>
+
+<div class="model-grid">
+<div class="model-card">
+<div class="provider" data-i18n="models.p.openai">OpenAI</div>
+<div class="name">GPT-4o</div>
+<div class="id">gpt-4o</div>
+<div class="meta"><span data-i18n="models.ctx">128K context</span><span data-i18n="models.vision">Vision</span><span data-i18n="models.tools">Tools</span></div>
+</div>
+<div class="model-card">
+<div class="provider" data-i18n="models.p.openai">OpenAI</div>
+<div class="name">GPT-4o mini</div>
+<div class="id">gpt-4o-mini</div>
+<div class="meta"><span data-i18n="models.ctx">128K context</span><span data-i18n="models.fast">Fast</span><span data-i18n="models.cheap">Cheap</span></div>
+</div>
+<div class="model-card">
+<div class="provider" data-i18n="models.p.openai">OpenAI</div>
+<div class="name">GPT-4 Turbo</div>
+<div class="id">gpt-4-turbo</div>
+<div class="meta"><span data-i18n="models.ctx">128K context</span><span data-i18n="models.vision">Vision</span></div>
+</div>
+<div class="model-card">
+<div class="provider" data-i18n="models.p.openai">OpenAI</div>
+<div class="name">o1-preview</div>
+<div class="id">o1-preview</div>
+<div class="meta"><span data-i18n="models.ctx">128K context</span><span data-i18n="models.reason">Reasoning</span></div>
+</div>
+
+<div class="model-card">
+<div class="provider" data-i18n="models.p.anthropic">Anthropic</div>
+<div class="name">Claude 3.5 Sonnet</div>
+<div class="id">claude-3-5-sonnet</div>
+<div class="meta"><span data-i18n="models.ctx">200K context</span><span data-i18n="models.vision">Vision</span><span data-i18n="models.code">Code</span></div>
+</div>
+<div class="model-card">
+<div class="provider" data-i18n="models.p.anthropic">Anthropic</div>
+<div class="name">Claude 3.5 Haiku</div>
+<div class="id">claude-3-5-haiku</div>
+<div class="meta"><span data-i18n="models.ctx">200K context</span><span data-i18n="models.fast">Fast</span></div>
+</div>
+
+<div class="model-card">
+<div class="provider" data-i18n="models.p.google">Google</div>
+<div class="name">Gemini Pro 1.5</div>
+<div class="id">gemini-pro-1.5</div>
+<div class="meta"><span data-i18n="models.ctx">2M context</span><span data-i18n="models.vision">Vision</span></div>
+</div>
+<div class="model-card">
+<div class="provider" data-i18n="models.p.google">Google</div>
+<div class="name">Gemini Flash 1.5</div>
+<div class="id">gemini-flash-1.5</div>
+<div class="meta"><span data-i18n="models.ctx">1M context</span><span data-i18n="models.fast">Fast</span></div>
+</div>
+
+<div class="model-card" style="border-color: var(--primary); background: linear-gradient(135deg, #fff 0%, var(--surface-container-low) 100%);">
+<div class="provider" data-i18n="models.p.zhipu">Zhipu AI <span class="badge" data-i18n="models.free">24M+ Free</span></div>
+<div class="name">GLM-4-Plus</div>
+<div class="id">glm-4-plus</div>
+<div class="meta"><span data-i18n="models.ctx">128K context</span><span data-i18n="models.cn">Chinese</span><span data-i18n="models.cheap">Cheap</span></div>
+</div>
+<div class="model-card">
+<div class="provider" data-i18n="models.p.zhipu">Zhipu AI</div>
+<div class="name">GLM-4-Flash</div>
+<div class="id">glm-4-flash</div>
+<div class="meta"><span data-i18n="models.ctx">128K context</span><span data-i18n="models.fast">Fast</span></div>
+</div>
+
+<div class="model-card">
+<div class="provider" data-i18n="models.p.deepseek">DeepSeek</div>
+<div class="name">DeepSeek-V3</div>
+<div class="id">deepseek-v3</div>
+<div class="meta"><span data-i18n="models.ctx">64K context</span><span data-i18n="models.reason">Reasoning</span><span data-i18n="models.code">Code</span></div>
+</div>
+<div class="model-card">
+<div class="provider" data-i18n="models.p.deepseek">DeepSeek</div>
+<div class="name">DeepSeek-R1</div>
+<div class="id">deepseek-r1</div>
+<div class="meta"><span data-i18n="models.ctx">64K context</span><span data-i18n="models.reason">Reasoning</span></div>
+</div>
+
+<div class="model-card">
+<div class="provider" data-i18n="models.p.alibaba">Alibaba</div>
+<div class="name">Qwen-Max</div>
+<div class="id">qwen-max</div>
+<div class="meta"><span data-i18n="models.ctx">32K context</span><span data-i18n="models.cn">Chinese</span></div>
+</div>
+<div class="model-card">
+<div class="provider" data-i18n="models.p.alibaba">Alibaba</div>
+<div class="name">Qwen-Plus</div>
+<div class="id">qwen-plus</div>
+<div class="meta"><span data-i18n="models.ctx">128K context</span><span data-i18n="models.cn">Chinese</span><span data-i18n="models.fast">Fast</span></div>
+</div>
+
+<div class="model-card">
+<div class="provider" data-i18n="models.p.mistral">Mistral AI</div>
+<div class="name">Mistral Large 2</div>
+<div class="id">mistral-large-2</div>
+<div class="meta"><span data-i18n="models.ctx">128K context</span><span data-i18n="models.code">Code</span></div>
+</div>
+<div class="model-card">
+<div class="provider" data-i18n="models.p.meta">Meta</div>
+<div class="name">Llama 3.1 70B</div>
+<div class="id">llama-3.1-70b</div>
+<div class="meta"><span data-i18n="models.ctx">128K context</span><span data-i18n="models.open">Open weights</span></div>
+</div>
+<div class="model-card">
+<div class="provider" data-i18n="models.p.meta">Meta</div>
+<div class="name">Llama 3.1 8B</div>
+<div class="id">llama-3.1-8b</div>
+<div class="meta"><span data-i18n="models.ctx">128K context</span><span data-i18n="models.fast">Fast</span><span data-i18n="models.cheap">Cheap</span></div>
+</div>
+</div>
+
+<p style="margin-top: 32px; color: var(--secondary); font-size: 14px;" data-i18n="models.footnote">
+All model prices on TokenMaster are 25% of OpenAI's published list price, regardless of the upstream provider. See <a href="landing.html#pricing" style="color: var(--primary);">Pricing</a> for the per-token rates.
+</p>
+</main>
+<footer>
+<div>
+<a href="landing.html">Home</a>
+<a href="docs.html">Docs</a>
+<a href="docs-api.html">API Ref</a>
+<a href="models.html">Models</a>
+<a href="about.html">About</a>
+<a href="contact.html">Contact</a>
+<a href="privacy.html">Privacy</a>
+<a href="terms.html">Terms</a>
+</div>
+<div style="margin-top: 16px; font-size: 12px;">&copy; 2026 TokenMaster AI. All rights reserved.</div>
+</footer>
+<script>
+const I18N = {
+    en: {
+        'models.h1': 'All Models',
+        'models.lead': '17+ AI models live on TokenMaster. One master key, OpenAI-compatible API. Use any model id in the model field.',
+        'models.p.openai': 'OpenAI', 'models.p.anthropic': 'Anthropic', 'models.p.google': 'Google',
+        'models.p.zhipu': 'Zhipu AI', 'models.p.deepseek': 'DeepSeek', 'models.p.alibaba': 'Alibaba',
+        'models.p.mistral': 'Mistral AI', 'models.p.meta': 'Meta',
+        'models.ctx': 'context', 'models.vision': 'Vision', 'models.tools': 'Tools', 'models.fast': 'Fast',
+        'models.cheap': 'Cheap', 'models.code': 'Code', 'models.cn': 'Chinese', 'models.open': 'Open weights',
+        'models.reason': 'Reasoning', 'models.free': '24M+ Free',
+        'models.footnote': 'All model prices on TokenMaster are 25% of OpenAI\u2019s published list price, regardless of the upstream provider. See Pricing for the per-token rates.'
+    },
+    zh: {
+        'models.h1': '全部模型',
+        'models.lead': 'TokenMaster 上线 17+ AI 模型。一个主密钥,OpenAI 兼容 API。在 model 字段使用任意模型 ID。',
+        'models.p.openai': 'OpenAI', 'models.p.anthropic': 'Anthropic', 'models.p.google': 'Google',
+        'models.p.zhipu': '智谱 AI', 'models.p.deepseek': 'DeepSeek', 'models.p.alibaba': '阿里',
+        'models.p.mistral': 'Mistral AI', 'models.p.meta': 'Meta',
+        'models.ctx': '上下文', 'models.vision': '视觉', 'models.tools': '工具调用', 'models.fast': '快速',
+        'models.cheap': '便宜', 'models.code': '代码', 'models.cn': '中文', 'models.open': '开源',
+        'models.reason': '推理', 'models.free': '24M+ 免费',
+        'models.footnote': 'TokenMaster 上所有模型价格均为 OpenAI 公开标价 25%,与上游供应商无关。每 token 价格见价格页。'
+    }
+};
+function applyLang(lang) {
+    const dict = I18N[lang] || I18N.en;
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const val = dict[key];
+        if (val !== undefined) el.textContent = val;
+    });
+    try { localStorage.setItem('tm_lang', lang); } catch (e) {}
+    const lbl = document.getElementById('lang-toggle-label');
+    if (lbl) lbl.textContent = lang === 'zh' ? '\u4e2d' : 'EN';
+}
+(function init() {
+    let saved = 'en';
+    try {
+        const stored = localStorage.getItem('tm_lang');
+        if (stored && (stored === 'en' || stored === 'zh')) saved = stored;
+        else if (navigator.language && navigator.language.toLowerCase().startsWith('zh')) saved = 'zh';
+    } catch (e) {}
+    applyLang(saved);
+    const toggle = document.getElementById('lang-toggle');
+    if (toggle) toggle.addEventListener('click', e => {
+        e.preventDefault();
+        const cur = (document.documentElement.lang || 'en').startsWith('zh') ? 'zh' : 'en';
+        applyLang(cur === 'zh' ? 'en' : 'zh');
+    });
+})();
+</script>
+</body>
+</html>

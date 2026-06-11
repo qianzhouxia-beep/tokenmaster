@@ -90,6 +90,17 @@ def _startup() -> None:
         log.info("assets static mounted at /assets (dir=%s)", assets_dir)
     else:
         log.warning("assets dir not found at %s — /assets will 404", assets_dir)
+    # v6.13: site root mount for footer links (about/contact/docs/docs-api/
+    # models/privacy/terms). We restrict the served directory to a sibling
+    # `site/` folder and copy the 7 html files there at deploy time — that
+    # way app.py, .env, db.py, redeem.py, and the rest of webhook-deploy
+    # internals can NEVER be exposed even if someone guesses a path.
+    site_dir = pathlib.Path(__file__).parent / "site"
+    if site_dir.is_dir():
+        app.mount("/", StaticFiles(directory=str(site_dir), html=True), name="site")
+        log.info("site static mounted at / (dir=%s)", site_dir)
+    else:
+        log.warning("site dir not found at %s — footer links will 404", site_dir)
     # v6 c-path: fetch QuotaPerUnit for USD→quota conversion. Best-effort; on
     # any failure (no cookie / 401 / network) we keep the 500_000 default.
     global _quota_per_unit

@@ -1,0 +1,219 @@
+﻿<!DOCTYPE html>
+<html lang="en" style="scroll-smooth">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terms of Service — TokenMaster</title>
+<meta name="description" content="TokenMaster Terms of Service: usage rules, refunds, liability, termination.">
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"></noscript>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<style>
+:root { --primary: #ab3500; --primary-container: #ff6b35; --surface: #fff8f6; --on-surface: #261814; --secondary: #5f5e5e; --outline-variant: #e1bfb5; --surface-container-low: #fff1ed; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--surface); color: var(--on-surface); line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
+header { background: var(--surface); border-bottom: 1px solid var(--outline-variant); position: sticky; top: 0; z-index: 50; backdrop-filter: blur(8px); }
+nav { max-width: 1200px; margin: 0 auto; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; }
+.logo { display: flex; align-items: center; gap: 8px; font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 20px; color: var(--on-surface); text-decoration: none; }
+.nav-links { display: flex; gap: 32px; }
+.nav-links a { color: var(--secondary); text-decoration: none; font-size: 16px; font-weight: 500; transition: color 0.2s; }
+.nav-links a:hover, .nav-links a.active { color: var(--primary); }
+.lang-toggle { display: flex; align-items: center; gap: 4px; padding: 6px 12px; border: 1px solid var(--outline-variant); border-radius: 9999px; background: transparent; color: var(--secondary); font-family: "JetBrains Mono", monospace; font-size: 12px; font-weight: 500; cursor: pointer; }
+.lang-toggle:hover { border-color: var(--primary); color: var(--primary); }
+.cta-btn { background: var(--primary-container); color: #fff; padding: 8px 20px; border-radius: 6px; font-family: "JetBrains Mono", monospace; font-size: 14px; font-weight: 500; text-decoration: none; }
+.cta-btn:hover { background: var(--primary); }
+main { flex: 1; max-width: 800px; margin: 0 auto; padding: 64px 32px; width: 100%; }
+h1 { font-family: "Space Grotesk", sans-serif; font-size: 48px; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 8px; }
+.meta { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 48px; }
+h2 { font-family: "Space Grotesk", sans-serif; font-size: 24px; font-weight: 600; margin: 32px 0 12px; }
+p { margin-bottom: 16px; }
+ul { margin-bottom: 16px; padding-left: 24px; }
+li { margin-bottom: 8px; }
+code { font-family: "JetBrains Mono", monospace; font-size: 14px; background: var(--surface-container-low); padding: 2px 6px; border-radius: 4px; color: var(--primary); }
+footer { background: var(--surface-container-low); border-top: 1px solid var(--outline-variant); padding: 32px; text-align: center; font-size: 14px; color: var(--secondary); }
+footer a { color: var(--primary); text-decoration: none; margin: 0 12px; }
+.material-symbols-outlined { font-family: "Material Symbols Outlined", "Apple Color Emoji", "Segoe UI Emoji", sans-serif; font-weight: normal; font-style: normal; font-size: 18px; vertical-align: middle; }
+@media (max-width: 768px) { .nav-links { display: none; } h1 { font-size: 32px; } main { padding: 32px 20px; } }
+</style>
+</head>
+<body>
+<header>
+<nav>
+<a class="logo" href="landing.html"><img src="assets/logo.png" alt="TokenMaster" style="height: 40px; width: auto; max-width: 200px; object-fit: contain; display: block;">TokenMaster</a>
+<div class="nav-links">
+<a href="landing.html#features">Features</a>
+<a href="landing.html#pricing">Pricing</a>
+<a href="landing.html#faq">FAQ</a>
+<a href="docs.html">Docs</a>
+</div>
+<div style="display: flex; align-items: center; gap: 12px;">
+<button class="lang-toggle" id="lang-toggle" type="button" aria-label="Switch language">
+<span class="material-symbols-outlined" style="font-size: 16px;">public</span>
+<span id="lang-toggle-label">EN</span>
+</button>
+<a class="cta-btn" href="landing.html">Get Tokens</a>
+</div>
+</nav>
+</header>
+<main>
+<h1 data-i18n="terms.h1">Terms of Service</h1>
+<p class="meta" data-i18n="terms.meta">Last updated: June 9, 2026</p>
+
+<h2 data-i18n="terms.s1.h2">1. Acceptance</h2>
+<p data-i18n="terms.s1.p1">By purchasing tokens or using the TokenMaster API, you agree to these Terms. If you do not agree, do not use the service.</p>
+
+<h2 data-i18n="terms.s2.h2">2. The service</h2>
+<p data-i18n="terms.s2.p1">TokenMaster provides a unified API gateway that routes your requests to upstream AI model providers (OpenAI, Anthropic, Google, Zhipu, DeepSeek, Qwen, Mistral, Meta). You pay a single price per token, regardless of which underlying model handles your request. We reserve the right to add, remove, or deprecate models with 30 days' notice via email.</p>
+
+<h2 data-i18n="terms.s3.h2">3. Acceptable use</h2>
+<p data-i18n="terms.s3.p1">You agree not to:</p>
+<ul>
+<li data-i18n="terms.s3.l1">Use the service to generate content that violates any applicable law.</li>
+<li data-i18n="terms.s3.l2">Attempt to circumvent rate limits, payment, or authentication controls.</li>
+<li data-i18n="terms.s3.l3">Resell, redistribute, or sublicense API access without written permission.</li>
+<li data-i18n="terms.s3.l4">Use the service to train competing models.</li>
+<li data-i18n="terms.s3.l5">Reverse-engineer, decompile, or extract the source code of any TokenMaster component.</li>
+</ul>
+
+<h2 data-i18n="terms.s4.h2">4. Pricing &amp; payment</h2>
+<ul>
+<li data-i18n="terms.s4.l1">Token packages are one-time purchases. There is no subscription or auto-debit.</li>
+<li data-i18n="terms.s4.l2">Prices are listed in USD and may be paid via PayPal or NOWPayments (crypto). Other currencies are converted at checkout.</li>
+<li data-i18n="terms.s4.l3">We reserve the right to change token pricing for future purchases at any time. Existing token balances are unaffected.</li>
+</ul>
+
+<h2 data-i18n="terms.s5.h2">5. Refunds</h2>
+<ul>
+<li data-i18n="terms.s5.l1"><strong>Unused tokens</strong>: refundable within 14 days of purchase, no questions asked. Contact <code>support@api-tokenmaster.com</code> with your transaction ID.</li>
+<li data-i18n="terms.s5.l2"><strong>Used tokens</strong>: non-refundable. Your remaining balance, however, carries over (see Section 6).</li>
+<li data-i18n="terms.s5.l3">Refunds are processed to the original payment method within 5–10 business days.</li>
+</ul>
+
+<h2 data-i18n="terms.s6.h2">6. Token validity &amp; roll-over</h2>
+<ul>
+<li data-i18n="terms.s6.l1">Tokens are valid for 12 months from the date of purchase.</li>
+<li data-i18n="terms.s6.l2">When a balance expires, any remaining tokens auto-renew for another 12 months, with a 10% bonus credit added (90% roll-over policy).</li>
+<li data-i18n="terms.s6.l3">Example: 1,000,000 unused tokens expiring → 1,100,000 tokens valid for the next 12 months.</li>
+</ul>
+
+<h2 data-i18n="terms.s7.h2">7. Service availability</h2>
+<p data-i18n="terms.s7.p1">We target 99.9% monthly uptime. Scheduled maintenance is announced 24 hours in advance. We do not guarantee uninterrupted access and are not liable for upstream provider outages (e.g., OpenAI, Anthropic service degradation). For mission-critical workloads, consider our Enterprise plan with custom SLA.</p>
+
+<h2 data-i18n="terms.s8.h2">8. Termination</h2>
+<p data-i18n="terms.s8.p1">We reserve the right to suspend or terminate any account that violates these Terms, with or without notice. You may close your account at any time by emailing <code>support@api-tokenmaster.com</code>. Unused tokens will be refunded pro-rata upon termination for cause by us.</p>
+
+<h2 data-i18n="terms.s9.h2">9. Limitation of liability</h2>
+<p data-i18n="terms.s9.p1">To the maximum extent permitted by law, TokenMaster's total liability for any claim arising from your use of the service is limited to the amount you paid us in the 12 months preceding the claim. We are not liable for indirect, incidental, or consequential damages.</p>
+
+<h2 data-i18n="terms.s10.h2">10. Changes to these Terms</h2>
+<p data-i18n="terms.s10.p1">We may update these Terms from time to time. Material changes will be announced by email at least 14 days before they take effect. Continued use of the service after the effective date constitutes acceptance.</p>
+
+<h2 data-i18n="terms.s11.h2">11. Contact</h2>
+<p data-i18n="terms.s11.p1">Questions: <code>support@api-tokenmaster.com</code>. See also our <a href="contact.html">Contact page</a>.</p>
+
+</main>
+<footer>
+<div>
+<a href="landing.html">Home</a>
+<a href="docs.html">Docs</a>
+<a href="docs-api.html">API Ref</a>
+<a href="models.html">Models</a>
+<a href="about.html">About</a>
+<a href="contact.html">Contact</a>
+<a href="privacy.html">Privacy</a>
+<a href="terms.html">Terms</a>
+</div>
+<div style="margin-top: 16px; font-size: 12px;">&copy; 2026 TokenMaster AI. All rights reserved.</div>
+</footer>
+<script>
+const I18N = {
+    en: {
+        'terms.h1': 'Terms of Service',
+        'terms.meta': 'Last updated: June 9, 2026',
+        'terms.s1.h2': '1. Acceptance', 'terms.s1.p1': 'By purchasing tokens or using the TokenMaster API, you agree to these Terms. If you do not agree, do not use the service.',
+        'terms.s2.h2': '2. The service', 'terms.s2.p1': "TokenMaster provides a unified API gateway that routes your requests to upstream AI model providers (OpenAI, Anthropic, Google, Zhipu, DeepSeek, Qwen, Mistral, Meta). You pay a single price per token, regardless of which underlying model handles your request. We reserve the right to add, remove, or deprecate models with 30 days' notice via email.",
+        'terms.s3.h2': '3. Acceptable use', 'terms.s3.p1': 'You agree not to:',
+        'terms.s3.l1': 'Use the service to generate content that violates any applicable law.',
+        'terms.s3.l2': 'Attempt to circumvent rate limits, payment, or authentication controls.',
+        'terms.s3.l3': 'Resell, redistribute, or sublicense API access without written permission.',
+        'terms.s3.l4': 'Use the service to train competing models.',
+        'terms.s3.l5': 'Reverse-engineer, decompile, or extract the source code of any TokenMaster component.',
+        'terms.s4.h2': '4. Pricing & payment',
+        'terms.s4.l1': 'Token packages are one-time purchases. There is no subscription or auto-debit.',
+        'terms.s4.l2': 'Prices are listed in USD and may be paid via PayPal or NOWPayments (crypto). Other currencies are converted at checkout.',
+        'terms.s4.l3': 'We reserve the right to change token pricing for future purchases at any time. Existing token balances are unaffected.',
+        'terms.s5.h2': '5. Refunds',
+        'terms.s5.l1': 'Unused tokens: refundable within 14 days of purchase, no questions asked. Contact support@api-tokenmaster.com with your transaction ID.',
+        'terms.s5.l2': 'Used tokens: non-refundable. Your remaining balance, however, carries over (see Section 6).',
+        'terms.s5.l3': 'Refunds are processed to the original payment method within 5\u201310 business days.',
+        'terms.s6.h2': '6. Token validity & roll-over',
+        'terms.s6.l1': 'Tokens are valid for 12 months from the date of purchase.',
+        'terms.s6.l2': 'When a balance expires, any remaining tokens auto-renew for another 12 months, with a 10% bonus credit added (90% roll-over policy).',
+        'terms.s6.l3': 'Example: 1,000,000 unused tokens expiring \u2192 1,100,000 tokens valid for the next 12 months.',
+        'terms.s7.h2': '7. Service availability', 'terms.s7.p1': 'We target 99.9% monthly uptime. Scheduled maintenance is announced 24 hours in advance. We do not guarantee uninterrupted access and are not liable for upstream provider outages (e.g., OpenAI, Anthropic service degradation). For mission-critical workloads, consider our Enterprise plan with custom SLA.',
+        'terms.s8.h2': '8. Termination', 'terms.s8.p1': 'We reserve the right to suspend or terminate any account that violates these Terms, with or without notice. You may close your account at any time by emailing support@api-tokenmaster.com. Unused tokens will be refunded pro-rata upon termination for cause by us.',
+        'terms.s9.h2': '9. Limitation of liability', 'terms.s9.p1': 'To the maximum extent permitted by law, TokenMaster\u2019s total liability for any claim arising from your use of the service is limited to the amount you paid us in the 12 months preceding the claim. We are not liable for indirect, incidental, or consequential damages.',
+        'terms.s10.h2': '10. Changes to these Terms', 'terms.s10.p1': 'We may update these Terms from time to time. Material changes will be announced by email at least 14 days before they take effect. Continued use of the service after the effective date constitutes acceptance.',
+        'terms.s11.h2': '11. Contact', 'terms.s11.p1': 'Questions: support@api-tokenmaster.com. See also our Contact page.'
+    },
+    zh: {
+        'terms.h1': '服务条款',
+        'terms.meta': '最后更新: 2026 年 6 月 9 日',
+        'terms.s1.h2': '1. 接受条款', 'terms.s1.p1': '购买 tokens 或使用 TokenMaster API 即视为您同意本条款。如不同意,请勿使用本服务。',
+        'terms.s2.h2': '2. 服务内容', 'terms.s2.p1': 'TokenMaster 提供统一的 API 网关,将您的请求路由到上游 AI 模型供应商 (OpenAI、Anthropic、Google、智谱、DeepSeek、Qwen、Mistral、Meta)。无论由哪个底层模型处理您的请求,您都按单一单价 (按 token) 付费。我们保留添加、移除或弃用模型的权利,会通过邮件提前 30 天通知。',
+        'terms.s3.h2': '3. 可接受的使用', 'terms.s3.p1': '您同意不会:',
+        'terms.s3.l1': '使用本服务生成违反任何适用法律的内容。',
+        'terms.s3.l2': '试图绕过限流、支付或身份认证控制。',
+        'terms.s3.l3': '未经书面许可,转售、再分发或再许可 API 访问。',
+        'terms.s3.l4': '使用本服务训练竞争模型。',
+        'terms.s3.l5': '反向工程、反编译或提取任何 TokenMaster 组件的源代码。',
+        'terms.s4.h2': '4. 定价与支付',
+        'terms.s4.l1': 'Token 套餐为一次性购买,无订阅、无自动扣费。',
+        'terms.s4.l2': '价格以美元标价,可通过 PayPal 或 NOWPayments (加密货币) 支付。其他货币在结账时换算。',
+        'terms.s4.l3': '我们保留随时调整未来 token 定价的权利,现有 token 余额不受影响。',
+        'terms.s5.h2': '5. 退款',
+        'terms.s5.l1': '未使用的 tokens: 购买后 14 天内可无理由退款。请联系 support@api-tokenmaster.com 并提供交易 ID。',
+        'terms.s5.l2': '已使用的 tokens: 不可退款。但您的剩余余额可以结转 (见第 6 节)。',
+        'terms.s5.l3': '退款将在 5–10 个工作日内退至原支付方式。',
+        'terms.s6.h2': '6. Token 有效期与顺延',
+        'terms.s6.l1': 'Tokens 自购买日起 12 个月内有效。',
+        'terms.s6.l2': '余额到期时,任何剩余 tokens 将自动续期 12 个月,并赠送 10% 奖励额度 (90% 顺延政策)。',
+        'terms.s6.l3': '示例: 1,000,000 未使用 tokens 到期 → 1,100,000 tokens 在接下来 12 个月内有效。',
+        'terms.s7.h2': '7. 服务可用性', 'terms.s7.p1': '我们的目标是 99.9% 月度正常运行时间。计划维护提前 24 小时公告。我们不保证不间断访问,亦不对上游供应商故障 (如 OpenAI、Anthropic 服务降级) 承担责任。关键业务负载请选择我们的企业版,提供定制 SLA。',
+        'terms.s8.h2': '8. 终止', 'terms.s8.p1': '我们保留在有或没有通知的情况下,暂停或终止任何违反本条款的账户。您可随时通过 support@api-tokenmaster.com 关闭您的账户。若因我方过错导致终止,未使用 tokens 将按比例退款。',
+        'terms.s9.h2': '9. 责任限制', 'terms.s9.p1': '在适用法律允许的最大范围内,TokenMaster 对因您使用本服务引起的任何索赔的总责任,不超过您在索赔前 12 个月内支付给我们的金额。我们不对间接、附带或后果性损害承担责任。',
+        'terms.s10.h2': '10. 条款变更', 'terms.s10.p1': '我们可能不时更新本条款。重大变更将在生效前至少 14 天通过邮件公告。在生效日后继续使用本服务即视为接受。',
+        'terms.s11.h2': '11. 联系方式', 'terms.s11.p1': '疑问: support@api-tokenmaster.com。另见我们的联系页面。'
+    }
+};
+function applyLang(lang) {
+    const dict = I18N[lang] || I18N.en;
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const val = dict[key];
+        if (val !== undefined) el.textContent = val;
+    });
+    try { localStorage.setItem('tm_lang', lang); } catch (e) {}
+    const lbl = document.getElementById('lang-toggle-label');
+    if (lbl) lbl.textContent = lang === 'zh' ? '\u4e2d' : 'EN';
+}
+(function init() {
+    let saved = 'en';
+    try {
+        const stored = localStorage.getItem('tm_lang');
+        if (stored && (stored === 'en' || stored === 'zh')) saved = stored;
+        else if (navigator.language && navigator.language.toLowerCase().startsWith('zh')) saved = 'zh';
+    } catch (e) {}
+    applyLang(saved);
+    const toggle = document.getElementById('lang-toggle');
+    if (toggle) toggle.addEventListener('click', e => {
+        e.preventDefault();
+        const cur = (document.documentElement.lang || 'en').startsWith('zh') ? 'zh' : 'en';
+        applyLang(cur === 'zh' ? 'en' : 'zh');
+    });
+})();
+</script>
+</body>
+</html>

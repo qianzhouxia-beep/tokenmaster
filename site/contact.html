@@ -1,0 +1,193 @@
+﻿<!DOCTYPE html>
+<html lang="en" style="scroll-smooth">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact — TokenMaster</title>
+<meta name="description" content="Contact TokenMaster: support, sales, partnerships.">
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"></noscript>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<style>
+:root { --primary: #ab3500; --primary-container: #ff6b35; --surface: #fff8f6; --on-surface: #261814; --secondary: #5f5e5e; --outline-variant: #e1bfb5; --surface-container-low: #fff1ed; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--surface); color: var(--on-surface); line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
+header { background: var(--surface); border-bottom: 1px solid var(--outline-variant); position: sticky; top: 0; z-index: 50; backdrop-filter: blur(8px); }
+nav { max-width: 1200px; margin: 0 auto; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; }
+.logo { display: flex; align-items: center; gap: 8px; font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 20px; color: var(--on-surface); text-decoration: none; }
+.nav-links { display: flex; gap: 32px; }
+.nav-links a { color: var(--secondary); text-decoration: none; font-size: 16px; font-weight: 500; transition: color 0.2s; }
+.nav-links a:hover, .nav-links a.active { color: var(--primary); }
+.lang-toggle { display: flex; align-items: center; gap: 4px; padding: 6px 12px; border: 1px solid var(--outline-variant); border-radius: 9999px; background: transparent; color: var(--secondary); font-family: "JetBrains Mono", monospace; font-size: 12px; font-weight: 500; cursor: pointer; }
+.lang-toggle:hover { border-color: var(--primary); color: var(--primary); }
+.cta-btn { background: var(--primary-container); color: #fff; padding: 8px 20px; border-radius: 6px; font-family: "JetBrains Mono", monospace; font-size: 14px; font-weight: 500; text-decoration: none; }
+.cta-btn:hover { background: var(--primary); }
+main { flex: 1; max-width: 800px; margin: 0 auto; padding: 64px 32px; width: 100%; }
+h1 { font-family: "Space Grotesk", sans-serif; font-size: 48px; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 16px; }
+.lead { font-size: 20px; color: var(--secondary); margin-bottom: 48px; }
+.contact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 32px; }
+.contact-card { background: #fff; border: 1px solid var(--outline-variant); border-radius: 12px; padding: 24px; transition: all 0.2s; }
+.contact-card:hover { border-color: var(--primary); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04); }
+.contact-card .icon { width: 40px; height: 40px; background: var(--surface-container-low); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; color: var(--primary); }
+.contact-card h3 { font-family: "Space Grotesk", sans-serif; font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+.contact-card p { color: var(--secondary); font-size: 14px; margin-bottom: 8px; }
+.contact-card a { color: var(--primary); text-decoration: none; font-family: "JetBrains Mono", monospace; font-size: 14px; }
+.contact-card a:hover { text-decoration: underline; }
+.response-time { display: inline-block; background: var(--surface-container-low); padding: 2px 8px; border-radius: 4px; font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--secondary); margin-top: 8px; }
+form { background: #fff; border: 1px solid var(--outline-variant); border-radius: 12px; padding: 24px; margin-top: 32px; }
+form h2 { font-family: "Space Grotesk", sans-serif; font-size: 20px; margin-bottom: 16px; }
+form label { display: block; font-family: "JetBrains Mono", monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary); margin-bottom: 4px; }
+form input, form select, form textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--outline-variant); border-radius: 6px; font-family: inherit; font-size: 14px; margin-bottom: 16px; background: #fff; }
+form input:focus, form select:focus, form textarea:focus { outline: 2px solid var(--primary); outline-offset: -1px; border-color: var(--primary); }
+form textarea { min-height: 120px; resize: vertical; }
+form button { background: var(--primary-container); color: #fff; padding: 10px 24px; border: none; border-radius: 6px; font-family: "JetBrains Mono", monospace; font-size: 14px; font-weight: 500; cursor: pointer; }
+form button:hover { background: var(--primary); }
+footer { background: var(--surface-container-low); border-top: 1px solid var(--outline-variant); padding: 32px; text-align: center; font-size: 14px; color: var(--secondary); }
+footer a { color: var(--primary); text-decoration: none; margin: 0 12px; }
+.material-symbols-outlined { font-family: "Material Symbols Outlined", "Apple Color Emoji", "Segoe UI Emoji", sans-serif; font-weight: normal; font-style: normal; font-size: 18px; vertical-align: middle; }
+@media (max-width: 768px) { .nav-links { display: none; } h1 { font-size: 32px; } main { padding: 32px 20px; } }
+</style>
+</head>
+<body>
+<header>
+<nav>
+<a class="logo" href="landing.html"><img src="assets/logo.png" alt="TokenMaster" style="height: 40px; width: auto; max-width: 200px; object-fit: contain; display: block;">TokenMaster</a>
+<div class="nav-links">
+<a href="landing.html#features">Features</a>
+<a href="landing.html#pricing">Pricing</a>
+<a href="landing.html#faq">FAQ</a>
+<a href="docs.html">Docs</a>
+</div>
+<div style="display: flex; align-items: center; gap: 12px;">
+<button class="lang-toggle" id="lang-toggle" type="button" aria-label="Switch language">
+<span class="material-symbols-outlined" style="font-size: 16px;">public</span>
+<span id="lang-toggle-label">EN</span>
+</button>
+<a class="cta-btn" href="landing.html">Get Tokens</a>
+</div>
+</nav>
+</header>
+<main>
+<h1 data-i18n="contact.h1">Contact</h1>
+<p class="lead" data-i18n="contact.lead">Pick the channel that fits your question. We're small but we answer fast.</p>
+
+<div class="contact-grid">
+<div class="contact-card">
+<div class="icon"><span class="material-symbols-outlined">support_agent</span></div>
+<h3 data-i18n="contact.c1.h">Support</h3>
+<p data-i18n="contact.c1.p">API issues, account questions, billing help.</p>
+<a href="mailto:support@api-tokenmaster.com">support@api-tokenmaster.com</a>
+<div class="response-time" data-i18n="contact.c1.rt">Response within 24h</div>
+</div>
+<div class="contact-card">
+<div class="icon"><span class="material-symbols-outlined">handshake</span></div>
+<h3 data-i18n="contact.c2.h">Sales</h3>
+<p data-i18n="contact.c2.p">Enterprise plans, custom SLAs, high-volume deals.</p>
+<a href="mailto:support@api-tokenmaster.com">support@api-tokenmaster.com</a>
+<div class="response-time" data-i18n="contact.c2.rt">Response within 1 business day</div>
+</div>
+<div class="contact-card">
+<div class="icon"><span class="material-symbols-outlined">campaign</span></div>
+<h3 data-i18n="contact.c3.h">Press &amp; Partnerships</h3>
+<p data-i18n="contact.c3.p">Media inquiries, integration partnerships, affiliate programs.</p>
+<a href="mailto:support@api-tokenmaster.com">support@api-tokenmaster.com</a>
+<div class="response-time" data-i18n="contact.c3.rt">Response within 3 business days</div>
+</div>
+<div class="contact-card">
+<div class="icon"><span class="material-symbols-outlined">gavel</span></div>
+<h3 data-i18n="contact.c4.h">Legal</h3>
+<p data-i18n="contact.c4.p">Privacy, terms, DMCA, law enforcement requests.</p>
+<a href="mailto:support@api-tokenmaster.com">support@api-tokenmaster.com</a>
+<div class="response-time" data-i18n="contact.c4.rt">Response within 5 business days</div>
+</div>
+</div>
+
+<form onsubmit="event.preventDefault(); alert(document.documentElement.lang.startsWith('zh') ? '\u5df2\u6536\u5230\uff0c\u6211\u4eec\u4f1a\u5728 24 \u5c0f\u65f6\u5185\u56de\u590d\u3002' : 'Got it. We will reply within 24 hours.'); this.reset();">
+<h2 data-i18n="contact.form.h">Send us a message</h2>
+<label for="email" data-i18n="contact.form.email">Your email</label>
+<input id="email" type="email" required placeholder="you@example.com">
+<label for="topic" data-i18n="contact.form.topic">Topic</label>
+<select id="topic" required>
+<option value="support" data-i18n="contact.form.t1">Support</option>
+<option value="sales" data-i18n="contact.form.t2">Sales</option>
+<option value="bug" data-i18n="contact.form.t3">Bug report</option>
+<option value="feature" data-i18n="contact.form.t4">Feature request</option>
+<option value="other" data-i18n="contact.form.t5">Other</option>
+</select>
+<label for="message" data-i18n="contact.form.message">Message</label>
+<textarea id="message" required placeholder="..."></textarea>
+<button type="submit" data-i18n="contact.form.send">Send</button>
+</form>
+
+</main>
+<footer>
+<div>
+<a href="landing.html">Home</a>
+<a href="docs.html">Docs</a>
+<a href="docs-api.html">API Ref</a>
+<a href="models.html">Models</a>
+<a href="about.html">About</a>
+<a href="contact.html">Contact</a>
+<a href="privacy.html">Privacy</a>
+<a href="terms.html">Terms</a>
+</div>
+<div style="margin-top: 16px; font-size: 12px;">&copy; 2026 TokenMaster AI. All rights reserved.</div>
+</footer>
+<script>
+const I18N = {
+    en: {
+        'contact.h1': 'Contact',
+        'contact.lead': 'Pick the channel that fits your question. We\u2019re small but we answer fast.',
+        'contact.c1.h': 'Support', 'contact.c1.p': 'API issues, account questions, billing help.', 'contact.c1.rt': 'Response within 24h',
+        'contact.c2.h': 'Sales', 'contact.c2.p': 'Enterprise plans, custom SLAs, high-volume deals.', 'contact.c2.rt': 'Response within 1 business day',
+        'contact.c3.h': 'Press & Partnerships', 'contact.c3.p': 'Media inquiries, integration partnerships, affiliate programs.', 'contact.c3.rt': 'Response within 3 business days',
+        'contact.c4.h': 'Legal', 'contact.c4.p': 'Privacy, terms, DMCA, law enforcement requests.', 'contact.c4.rt': 'Response within 5 business days',
+        'contact.form.h': 'Send us a message',
+        'contact.form.email': 'Your email', 'contact.form.topic': 'Topic',
+        'contact.form.t1': 'Support', 'contact.form.t2': 'Sales', 'contact.form.t3': 'Bug report', 'contact.form.t4': 'Feature request', 'contact.form.t5': 'Other',
+        'contact.form.message': 'Message', 'contact.form.send': 'Send'
+    },
+    zh: {
+        'contact.h1': '联系我们',
+        'contact.lead': '选择最贴合您问题的渠道。我们虽小,但回复很快。',
+        'contact.c1.h': '客户支持', 'contact.c1.p': 'API 问题、账户疑问、计费帮助。', 'contact.c1.rt': '24 小时内回复',
+        'contact.c2.h': '销售', 'contact.c2.p': '企业版、定制 SLA、大批量合作。', 'contact.c2.rt': '1 个工作日内回复',
+        'contact.c3.h': '媒体与合作', 'contact.c3.p': '媒体询问、集成合作、联盟计划。', 'contact.c3.rt': '3 个工作日内回复',
+        'contact.c4.h': '法务', 'contact.c4.p': '隐私、条款、DMCA、执法请求。', 'contact.c4.rt': '5 个工作日内回复',
+        'contact.form.h': '给我们留言',
+        'contact.form.email': '您的邮箱', 'contact.form.topic': '主题',
+        'contact.form.t1': '客户支持', 'contact.form.t2': '销售', 'contact.form.t3': 'Bug 报告', 'contact.form.t4': '功能建议', 'contact.form.t5': '其他',
+        'contact.form.message': '留言内容', 'contact.form.send': '发送'
+    }
+};
+function applyLang(lang) {
+    const dict = I18N[lang] || I18N.en;
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const val = dict[key];
+        if (val !== undefined) el.textContent = val;
+    });
+    try { localStorage.setItem('tm_lang', lang); } catch (e) {}
+    const lbl = document.getElementById('lang-toggle-label');
+    if (lbl) lbl.textContent = lang === 'zh' ? '\u4e2d' : 'EN';
+}
+(function init() {
+    let saved = 'en';
+    try {
+        const stored = localStorage.getItem('tm_lang');
+        if (stored && (stored === 'en' || stored === 'zh')) saved = stored;
+        else if (navigator.language && navigator.language.toLowerCase().startsWith('zh')) saved = 'zh';
+    } catch (e) {}
+    applyLang(saved);
+    const toggle = document.getElementById('lang-toggle');
+    if (toggle) toggle.addEventListener('click', e => {
+        e.preventDefault();
+        const cur = (document.documentElement.lang || 'en').startsWith('zh') ? 'zh' : 'en';
+        applyLang(cur === 'zh' ? 'en' : 'zh');
+    });
+})();
+</script>
+</body>
+</html>
