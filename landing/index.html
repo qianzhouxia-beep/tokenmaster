@@ -89,6 +89,7 @@
                       "md": "16px",
                       "xxl": "80px",
                       "3xl": "120px",
+                      "5xl": "240px",
                       "lg": "24px",
                       "xs": "4px",
                       "xl": "40px",
@@ -179,7 +180,7 @@
 <!-- Section 1: Hero (no own header — New API provides the navbar) -->
 <main>
 <!-- Hero Section -->
-<section class="relative pt-3xl pb-xxl px-gutter">
+<section class="relative pt-5xl pb-xxl px-gutter">
 <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-xl">
 <div class="lg:w-1/2 space-y-lg">
                     <h1 class="text-on-surface leading-tight" style="font-family: 'Space Grotesk', sans-serif; font-size: clamp(2.25rem, 5vw, 3.5rem); font-weight: 700; line-height: 1.05; letter-spacing: -0.03em; text-wrap: balance;" data-i18n="hero.title">
@@ -522,11 +523,14 @@
 </div>
 </div>
 </footer>
-    <!-- v6.6: floating language toggle (replaces the removed header button) -->
-    <button id="lang-toggle" type="button" aria-label="Switch language" class="lang-toggle-btn fixed bottom-6 right-6 z-50 flex items-center gap-xs px-md py-sm rounded-full border border-outline-variant text-secondary font-label-md hover:border-primary hover:text-primary transition-all" style="background: var(--surface-bright); box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-        <span class="material-symbols-outlined ms-fallback-globe" style="font-size: 16px;">public</span>
-        <span id="lang-toggle-label">EN</span>
-    </button>
+    <!-- v6.8: prominent floating language toggle (manual sync — see note below) -->
+    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-sm">
+        <button id="lang-toggle" type="button" aria-label="Switch language" class="lang-toggle-btn flex items-center gap-sm px-lg py-sm rounded-full border-2 border-primary text-primary font-label-md hover:bg-primary hover:text-on-primary transition-all shadow-lg" style="background: var(--surface-bright);">
+            <span class="material-symbols-outlined ms-fallback-globe" style="font-size: 18px;">public</span>
+            <span id="lang-toggle-label">EN</span>
+            <span class="font-label-sm opacity-70 hidden sm:inline" data-toggle-hint>switch ↔ 切换</span>
+        </button>
+    </div>
     <script>
         // ============ I18N ============
         const I18N = {
@@ -921,67 +925,108 @@
             }
         })();
 
-// ============ LANG TOGGLE + INIT (v6.7: follow New API i18nextLng) ============
+// ============ LANG TOGGLE + INIT (v6.8) ============
+// Reality check: this iframe is on `pay.api-tokenmaster.com` while the host New
+// API page is on `api-tokenmaster.com` — different origins. localStorage is
+// NOT shared, the 'storage' event does NOT bubble across origins, and we
+// cannot read the host's DOM. So "live follow host lang switch" is technically
+// impossible without modifying the host (New API) upstream.
+//
+// What we do instead:
+//   - 5-second poll that re-reads `navigator.language` and a handful of
+//     common i18next keys (i18nextLng, locale, i18n). When the user
+//     switches language in the host New API and then comes back to /
+//     focuses the iframe, we follow.
+//   - Manual floating button (prominent, bottom-center) writes our
+//     override key 'tm_lang' and re-applies. Also tries to postMessage
+//     the host (no-op silently if blocked) so the next nav can pick it up.
+//   - Try 'postMessage' upstream in case the host (or a future
+//     New API patch) listens for it.
+//   - First paint: read browser language.
         (function initLang() {
+            function normalize(s) {
+                if (!s) return null;
+                const n = String(s).trim().toLowerCase().replace(/_/g, '-');
+                if (n.startsWith('zh')) return 'zh';
+                if (n === 'en' || n.startsWith('en')) return 'en';
+                return null;
+            }
             function readLang() {
-                // 1st priority: New API's i18next localStorage key ('i18nextLng').
-                //    When the host New API page (or user) changes language, this
-                //    iframe is on the same origin so localStorage is shared and the
-                //    'storage' event below also fires for live updates.
-                // 2nd: our own 'tm_lang' override (set by the floating button below).
-                // 3rd: browser language.
-                // 4th: en.
+                // Manual override wins.
                 try {
-                    const i18nStored = localStorage.getItem('i18nextLng');
-                    if (i18nStored) {
-                        const n = i18nStored.trim().toLowerCase().replace(/_/g, '-');
-                        if (n.startsWith('zh')) return 'zh';
-                        if (n === 'en' || n.startsWith('en')) return 'en';
-                    }
+                    const tm = normalize(localStorage.getItem('tm_lang'));
+                    if (tm) return tm;
                 } catch (e) {}
+                // Common i18next keys (if user opened landing in a non-iframe tab).
+                for (const k of ['i18nextLng', 'i18n.language', 'locale', 'lng']) {
+                    try {
+                        const v = normalize(localStorage.getItem(k));
+                        if (v) return v;
+                    } catch (e) {}
+                }
+                // ?lang=zh in URL.
                 try {
-                    const tmStored = localStorage.getItem('tm_lang');
-                    if (tmStored === 'en' || tmStored === 'zh') return tmStored;
+                    const qp = new URLSearchParams(window.location.search);
+                    const v = normalize(qp.get('lang'));
+                    if (v) return v;
                 } catch (e) {}
+                // Browser language last.
                 try {
-                    if (navigator.language && navigator.language.toLowerCase().startsWith('zh')) return 'zh';
+                    const v = normalize(navigator.language);
+                    if (v) return v;
                 } catch (e) {}
                 return 'en';
             }
-            const initial = readLang();
-            console.log('[initLang] initial=', initial);
-            try { applyLang(initial); } catch (e) { console.error('[initLang] applyLang error:', e); }
+            function current() {
+                return (document.documentElement.lang || 'en').startsWith('zh') ? 'zh' : 'en';
+            }
+            function sync() {
+                const next = readLang();
+                if (next !== current()) {
+                    try { applyLang(next); } catch (e) { console.error('[sync] applyLang error:', e); }
+                }
+            }
+            // First paint.
+            try { applyLang(readLang()); } catch (e) { console.error('[initLang] applyLang error:', e); }
             const toggle = document.getElementById('lang-toggle');
             if (toggle) {
                 toggle.addEventListener('click', (e) => {
                     e.preventDefault();
-                    const cur = (document.documentElement.lang || 'en').startsWith('zh') ? 'zh' : 'en';
-                    const next = cur === 'zh' ? 'en' : 'zh';
+                    const next = current() === 'zh' ? 'en' : 'zh';
                     try {
-                        // Write both keys so the host New API also picks up our manual choice
-                        // (i18next reads 'i18nextLng' on next navigation/reload).
                         localStorage.setItem('tm_lang', next);
+                        // try common i18next keys too, in case the host later
+                        // exposes a same-origin path
                         try { localStorage.setItem('i18nextLng', next); } catch (e) {}
+                        try { localStorage.setItem('lng', next); } catch (e) {}
+                        try { localStorage.setItem('locale', next); } catch (e) {}
                         applyLang(next);
+                        // Try to inform the host (no-op silently if cross-origin / no listener).
+                        try {
+                            if (window.parent && window.parent !== window) {
+                                window.parent.postMessage({ type: 'tm_landing_lang', lang: next }, '*');
+                            }
+                        } catch (e) {}
                     } catch (e) { console.error('[toggle] applyLang error:', e); }
                 });
             }
-            // Live sync: when New API (same tab) changes i18nextLng, follow it.
-            // Same-origin iframe shares localStorage; the 'storage' event fires in
-            // the iframe for cross-document storage changes (it does NOT fire in
-            // the document that wrote the value, so we also re-read on focus).
-            window.addEventListener('storage', (e) => {
-                if (e.key === 'i18nextLng' || e.key === 'tm_lang') {
-                    const next = readLang();
-                    try { applyLang(next); } catch (err) { console.error('[storage] applyLang error:', err); }
-                }
+            // Listen for postMessage from host (in case New API ever does this).
+            window.addEventListener('message', (e) => {
+                try {
+                    const data = e.data;
+                    if (!data) return;
+                    let v = null;
+                    if (data.type === 'tm_lang' && data.lang) v = normalize(data.lang);
+                    else if (data.type === 'i18nextLng' && data.lng) v = normalize(data.lng);
+                    if (v) applyLang(v);
+                } catch (e) {}
             });
-            window.addEventListener('focus', () => {
-                const next = readLang();
-                const cur = (document.documentElement.lang || 'en').startsWith('zh') ? 'zh' : 'en';
-                if (next !== cur) {
-                    try { applyLang(next); } catch (err) { console.error('[focus] applyLang error:', err); }
-                }
+            // 5s poll: catches "user switched host lang, then came back to iframe".
+            setInterval(sync, 5000);
+            // Also sync on focus / visibility.
+            window.addEventListener('focus', sync);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) sync();
             });
         })();
     </script>
