@@ -13,12 +13,20 @@ from contextlib import contextmanager
 
 # SKU catalog: aligns with the M1 landing page SKU ids.
 # quota = New API redemption quota in units of 0.001 USD.
-# SKU ids MUST match the keys used by the landing app (landing/app.js SKU_DATA).
+# v6 d-path: 老板 L1 2026-06-11 11:30 拍板 新套餐 15/35/80 USD = 20M/50M/150M tokens
+# 公式 quota = USD * 1M/15 (15 USD 买 20M tokens, 即 1 token = 1 quota, 1 USD ≈ 1.333M tokens)
+# 比例跟 starter (10 USD = 100K quota, 1 USD = 10K quota) 不同, 因 landing page 计费按次
+# 现在统一按 token 计费, 让用户拿更多
 SKUS = {
+    # 老 4 档保留兼容
     "starter": {"label": "Starter $10", "usd":10, "quota":100_000},
     "indie":   {"label": "Indie $30",   "usd":30, "quota":300_000},
     "team":    {"label": "Team $100",   "usd":100, "quota":1_000_000},
     "pro":     {"label": "Pro $300",    "usd":300, "quota":3_000_000},
+    # v6 新套餐 (15/35/80 USD = 20M/50M/150M tokens)
+    "starter_v6": {"label": "Starter $15 (20M tokens)", "usd":15, "quota":20_000_000},
+    "indie_v6":   {"label": "Indie $35 (50M tokens)",   "usd":35, "quota":50_000_000},
+    "team_v6":    {"label": "Team $80 (150M tokens)",   "usd":80, "quota":150_000_000},
 }
 
 DB_PATH = os.environ.get(

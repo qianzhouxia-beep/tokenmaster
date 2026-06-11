@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 
 import requests
 
@@ -36,15 +37,26 @@ log = logging.getLogger("tokenmaster.redeem")
 
 NEW_API_BASE_URL = os.environ.get("NEW_API_BASE_URL", "https://api-tokenmaster.com")
 NEW_API_SESSION_COOKIE = os.environ.get("NEW_API_SESSION_COOKIE", "")
+# v6 d-path: admin login fallback when session cookie expires (12:35+ 401 bug).
+# 用 root user + password auto-login 拿新 session, 避免 30-day cookie 失效.
+NEW_API_ROOT_USERNAME = os.environ.get("NEW_API_ROOT_USERNAME", "root")
+NEW_API_ROOT_PASSWORD = os.environ.get("NEW_API_ROOT_PASSWORD", "")
 
-# USD price -> New API quota (1 quota = 0.001 USD, per v5 spec line 68).
+# USD price -> New API quota.
+# v6 d-path: 老板 L1 2026-06-11 11:30 拍板 新套餐 15/35/80 USD = 20M/50M/150M tokens
+# 公式: quota = USD * 1M / 15 (1 token = 1 quota)
 # Keys are STRINGS so callers can pass `order["usd_amount"]` directly
 # (`str(int)`) without a separate mapping table in app.py.
 QUOTA_MAP: dict[str, int] = {
+    # 老 4 档 (保留兼容, 1 quota = 0.001 USD)
     "10": 100_000,
     "30": 300_000,
     "100": 1_000_000,
     "300": 3_000_000,
+    # v6 新套餐 (1 quota = 1 token)
+    "15": 20_000_000,
+    "35": 50_000_000,
+    "80": 150_000_000,
 }
 
 
@@ -79,16 +91,13 @@ def create_redemption(sku: str, email: str) -> str:
             f"unknown sku: {sku!r}; expected one of {sorted(QUOTA_MAP)}"
         )
     if not NEW_API_SESSION_COOKIE:
-        raise SessionExpiredError(
-            "NEW_API_SESSION_COOKIE is empty in env — cannot call New API"
-        )
-
+        log.warning("NEW_API_SESSION_COOKIE empty in env, will fallback to admin login (sku=$%s)", sku)
     quota = QUOTA_MAP[sku]
     payload = {
         "name": f"Topup ${sku}",
         "count": 1,
         "quota": quota,
-        "expired_time": -1,
+        "expired_time": 0,  # 0 = 永不过期 (v6 d-path: -1 已被 New API 拒)
     }
     url = f"{NEW_API_BASE_URL}/api/redemption/"
     log.info(
@@ -96,10 +105,14 @@ def create_redemption(sku: str, email: str) -> str:
         url, sku, quota, email,
     )
 
+    # v6 d-path: 先试 session cookie (老路径), 401 后自动 admin login fallback
+    # admin 路径: login root → session cookie + New-Api-User: 1 → mint redemption
+    # New API 不接受 Bearer token, 必须是 session + header
     r = requests.post(
         url,
         headers={
             "Cookie": f"session={NEW_API_SESSION_COOKIE}",
+            "New-Api-User": "1",
             "Content-Type": "application/json",
             "Accept": "application/json",
         },
@@ -107,10 +120,33 @@ def create_redemption(sku: str, email: str) -> str:
         timeout=15,
     )
 
+    if r.status_code == 401 and NEW_API_ROOT_PASSWORD:
+        log.warning("session cookie 401, fallback to admin login (sku=$%s)", sku)
+        s = requests.Session()
+        r_login = s.post(
+            f"{NEW_API_BASE_URL}/api/user/login",
+            json={"username": NEW_API_ROOT_USERNAME, "password": NEW_API_ROOT_PASSWORD},
+            timeout=10,
+        )
+        if not (r_login.status_code == 200 and r_login.json().get("success")):
+            raise SessionExpiredError(
+                f"admin login failed for sku=${sku}: {r_login.text[:200]}"
+            )
+        r = s.post(
+            url,
+            headers={
+                "New-Api-User": "1",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            json=payload,
+            timeout=15,
+        )
+
     if r.status_code == 401:
         raise SessionExpiredError(
-            f"New API rejected session (HTTP 401) for sku=${sku}; "
-            f"refresh NEW_API_SESSION_COOKIE in .env"
+            f"New API rejected session AND admin login (HTTP 401) for sku=${sku}; "
+            f"check NEW_API_ROOT_PASSWORD in .env"
         )
 
     r.raise_for_status()

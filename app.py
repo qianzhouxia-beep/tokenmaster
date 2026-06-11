@@ -561,52 +561,6 @@ def test_redeem(payload: TestRedeemIn):
     return TestRedeemOut(status="ok", code=code, sku=payload.sku, email=payload.email)
 
 
-# v6 c-path UX: client JS polls this endpoint on pay.api-tokenmaster.com
-# (same subdomain, no CORS) to surface the post-payment balance to the user
-# without leaking the admin session. We use the server-side admin session
-# (NEW_API_SESSION_COOKIE env) to call New API on the user's behalf, then
-# return only the quota + a USD-denominated balance derived from
-# QuotaPerUnit. Client passes ?user_id=<id> (already known to the client
-# from its own New API session, not the admin session).
-@app.get("/api/user/balance/polling")
-def balance_polling(user_id: int) -> dict:
-    """Proxy GET /api/user/self/?id={user_id} to New API using admin session.
-
-    Returns a small JSON payload with quota + USD balance. The user_id is
-    passed by the client (it knows its own id from its user login); the
-    admin session is server-side only and never returned to the client.
-    """
-    if user_id <= 0:
-        raise HTTPException(400, "user_id required")
-    try:
-        r = requests.get(
-            f"{NEW_API_BASE_URL}/api/user/self/?id={user_id}",
-            headers={
-                "Cookie": f"session={NEW_API_SESSION_COOKIE}",
-                "New-Api-User": "1",
-                "Accept": "application/json",
-            },
-            timeout=10,
-        )
-        r.raise_for_status()
-        body = r.json()
-        data = body.get("data") if isinstance(body, dict) else None
-        if not isinstance(data, dict):
-            raise HTTPException(502, f"New API returned unexpected body: {body!r}")
-        quota = data.get("quota", 0)
-        # USD = quota / QuotaPerUnit (default 500_000; fetched at startup)
-        qpu = _quota_per_unit if _quota_per_unit else 500_000
-        balance_usd = (quota / qpu) if qpu else 0
-        return {"user_id": user_id, "quota": quota, "balance_usd": round(balance_usd, 4)}
-    except requests.HTTPError as e:
-        status = e.response.status_code if e.response is not None else 500
-        log.exception("balance-polling New API HTTP error")
-        raise HTTPException(status, f"New API HTTP error: {e}")
-    except Exception as e:
-        log.exception("balance-polling failed")
-        raise HTTPException(500, f"balance lookup failed: {type(e).__name__}: {e}")
-
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app:app", host="0.0.0.0", port=int(os.environ.get("PORT",8000)))
