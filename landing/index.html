@@ -995,14 +995,17 @@
                     if (v) applyLang(v);
                 } catch (e) {}
             });
-            // 5s poll: catches "user switched host lang, then came back to iframe"
+            // 1s poll: catches "user switched host lang, then came back to iframe"
             // (works only after we move to same-origin via Cloudflare reverse proxy).
-            setInterval(sync, 5000);
+            setInterval(sync, 1000);
             // Also sync on focus / visibility.
             window.addEventListener('focus', sync);
             document.addEventListener('visibilitychange', () => {
                 if (!document.hidden) sync();
             });
+            // v6.11 diag: expose readLang + current for console debug
+            window.__tmI18n = { readLang, current, sync, applyLang, getDict: () => ({ tm: localStorage.getItem('tm_lang'), i18nextLng: localStorage.getItem('i18nextLng'), lng: localStorage.getItem('lng'), locale: localStorage.getItem('locale'), nav: navigator.language, url: location.search }) };
+            console.log('[tm-i18n] init:', window.__tmI18n.getDict(), 'current:', window.__tmI18n.current());
         })();
     </script>
 
