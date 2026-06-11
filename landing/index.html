@@ -89,6 +89,7 @@
                       "md": "16px",
                       "xxl": "80px",
                       "3xl": "120px",
+                      "4xl": "160px",
                       "5xl": "240px",
                       "lg": "24px",
                       "xs": "4px",
@@ -180,7 +181,7 @@
 <!-- Section 1: Hero (no own header — New API provides the navbar) -->
 <main>
 <!-- Hero Section -->
-<section class="relative pt-5xl pb-xxl px-gutter">
+<section class="relative pt-4xl pb-xxl px-gutter">
 <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-xl">
 <div class="lg:w-1/2 space-y-lg">
                     <h1 class="text-on-surface leading-tight" style="font-family: 'Space Grotesk', sans-serif; font-size: clamp(2.25rem, 5vw, 3.5rem); font-weight: 700; line-height: 1.05; letter-spacing: -0.03em; text-wrap: balance;" data-i18n="hero.title">
@@ -523,14 +524,6 @@
 </div>
 </div>
 </footer>
-    <!-- v6.8: prominent floating language toggle (manual sync — see note below) -->
-    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-sm">
-        <button id="lang-toggle" type="button" aria-label="Switch language" class="lang-toggle-btn flex items-center gap-sm px-lg py-sm rounded-full border-2 border-primary text-primary font-label-md hover:bg-primary hover:text-on-primary transition-all shadow-lg" style="background: var(--surface-bright);">
-            <span class="material-symbols-outlined ms-fallback-globe" style="font-size: 18px;">public</span>
-            <span id="lang-toggle-label">EN</span>
-            <span class="font-label-sm opacity-70 hidden sm:inline" data-toggle-hint>switch ↔ 切换</span>
-        </button>
-    </div>
     <script>
         // ============ I18N ============
         const I18N = {
@@ -988,28 +981,9 @@
             }
             // First paint.
             try { applyLang(readLang()); } catch (e) { console.error('[initLang] applyLang error:', e); }
-            const toggle = document.getElementById('lang-toggle');
-            if (toggle) {
-                toggle.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const next = current() === 'zh' ? 'en' : 'zh';
-                    try {
-                        localStorage.setItem('tm_lang', next);
-                        // try common i18next keys too, in case the host later
-                        // exposes a same-origin path
-                        try { localStorage.setItem('i18nextLng', next); } catch (e) {}
-                        try { localStorage.setItem('lng', next); } catch (e) {}
-                        try { localStorage.setItem('locale', next); } catch (e) {}
-                        applyLang(next);
-                        // Try to inform the host (no-op silently if cross-origin / no listener).
-                        try {
-                            if (window.parent && window.parent !== window) {
-                                window.parent.postMessage({ type: 'tm_landing_lang', lang: next }, '*');
-                            }
-                        } catch (e) {}
-                    } catch (e) { console.error('[toggle] applyLang error:', e); }
-                });
-            }
+            // v6.9: no floating toggle button. Manual switching requires a
+            // future same-origin deploy (Cloudflare reverse proxy) so this
+            // iframe can read the host's localStorage / DOM.
             // Listen for postMessage from host (in case New API ever does this).
             window.addEventListener('message', (e) => {
                 try {
@@ -1021,7 +995,8 @@
                     if (v) applyLang(v);
                 } catch (e) {}
             });
-            // 5s poll: catches "user switched host lang, then came back to iframe".
+            // 5s poll: catches "user switched host lang, then came back to iframe"
+            // (works only after we move to same-origin via Cloudflare reverse proxy).
             setInterval(sync, 5000);
             // Also sync on focus / visibility.
             window.addEventListener('focus', sync);
