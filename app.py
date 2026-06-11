@@ -113,8 +113,11 @@ def _startup() -> None:
     # internals can NEVER be exposed even if someone guesses a path.
     site_dir = pathlib.Path(__file__).parent / "site"
     if site_dir.is_dir():
-        app.mount("/", StaticFiles(directory=str(site_dir), html=True), name="site")
-        log.info("site static mounted at / (dir=%s)", site_dir)
+        # v6.16: mount at /site/* (not /) so it never collides with the
+        # /create-order, /orders/{id}, /checkout/redirect, /paypal-webhook,
+        # /nowpayments-webhook, /api/*, /test-redeem API routes.
+        app.mount("/site", StaticFiles(directory=str(site_dir), html=True), name="site")
+        log.info("site static mounted at /site (dir=%s)", site_dir)
     else:
         log.warning("site dir not found at %s — footer links will 404", site_dir)
     # v6 c-path: fetch QuotaPerUnit for USD→quota conversion. Best-effort; on
@@ -260,6 +263,42 @@ def create_order(payload: CreateOrderIn) -> CreateOrderOut:
         log.exception("create-order failed")
         db.mark_failed(temp_order["id"], reason=f"create-error:{type(e).__name__}")
         raise HTTPException(502, f"provider error: {e}")
+
+
+# v6.16: GET /checkout/redirect — server-side 302 to PayPal / NOWPayments
+# URL. This is a robust fallback when the browser fails to fetch POST
+# (CORS, sandboxed iframe, CSP, ad-blocker, etc.) — a plain form GET or
+# a window.location = url navigation always works, no preflight, no body.
+@app.get("/checkout/redirect")
+def checkout_redirect(sku_id: str, email: str, payment_method: str) -> "Response":
+    from fastapi.responses import RedirectResponse  # local import keeps top tidy
+
+    if sku_id not in db.SKUS:
+        raise HTTPException(400, f"unknown sku_id: {sku_id}")
+    sku = db.SKUS[sku_id]
+    method = payment_method.lower()
+    if method not in ("paypal", "nowpayments"):
+        raise HTTPException(400, "payment_method must be 'paypal' or 'nowpayments'")
+    if not email or "@" not in email:
+        raise HTTPException(400, "valid email required")
+
+    temp_order = db.create_order(email, sku_id, method)
+    try:
+        if method == "paypal":
+            pp_id, pp_url = _paypal_create_checkout(sku, email)
+            db.attach_provider_id(temp_order["id"], "paypal", pp_id)
+        else:
+            np_id, np_url = _nowpayments_create_payment(sku, email, temp_order["id"])
+            db.attach_provider_id(temp_order["id"], "nowpayments", np_id)
+            pp_url = np_url
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.exception("checkout/redirect failed")
+        db.mark_failed(temp_order["id"], reason=f"create-error:{type(e).__name__}")
+        raise HTTPException(502, f"provider error: {e}")
+
+    return RedirectResponse(url=pp_url, status_code=302)
 
 
 @app.get("/orders/{order_id}")
