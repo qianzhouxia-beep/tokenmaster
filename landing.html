@@ -159,38 +159,23 @@
             -webkit-font-smoothing: antialiased;
         }
         /* Per-icon Unicode fallback when Material Symbols font fails to load */
-        .material-symbols-outlined[style*="check_circle"]::before { content: "\2713"; }      /* 鉁?*/
-        .material-symbols-outlined[style*="expand_more"]::before { content: "\25BC"; }      /* 鈻?*/
-        .material-symbols-outlined[class*="arrow_forward"]::before { content: "\2192"; }    /* 鈫?*/
-        .material-symbols-outlined[class*="public"]::before { content: "\1F310"; }          /* 馃寪 */
-        .material-symbols-outlined[class*="hub"]::before { content: "\1F5CE"; }              /* 馃棊 (placeholder visual) */
+        .material-symbols-outlined[style*="check_circle"]::before { content: "\2713"; }      /* ✓ */
+        .material-symbols-outlined[style*="expand_more"]::before { content: "\25BC"; }      /* ▼ */
+        .material-symbols-outlined[class*="arrow_forward"]::before { content: "\2192"; }    /* → */
+        .material-symbols-outlined[class*="public"]::before { content: "\1F310"; }          /* 🌐 */
+        .material-symbols-outlined[class*="hub"]::before { content: "\1F5CE"; }              /* 🗎 placeholder */
+        /* Universal fallback: common icon names → emoji glyph (works in iframe without Google Fonts) */
+        .material-symbols-outlined { font-family: "Material Symbols Outlined", "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","Symbola",sans-serif; }
+        .ms-fallback-shield::before  { content: "🛡"; }
+        .ms-fallback-payments::before{ content: "💳"; }
+        .ms-fallback-bolt::before    { content: "⚡"; }
+        .ms-fallback-savings::before { content: "💰"; }
+        .ms-fallback-rocket::before  { content: "🚀"; }
+        .ms-fallback-globe::before   { content: "🌐"; }
     </style>
 </head>
 <body class="bg-surface-bright text-on-surface font-body-md overflow-x-hidden">
-<!-- Section 1: Hero & Sticky Nav -->
-<header class="sticky top-0 w-full z-50 bg-surface-bright/80 backdrop-blur-md border-b border-outline-variant">
-<nav class="flex justify-between items-center px-gutter py-md max-w-7xl mx-auto">
-<div class="flex items-center gap-sm">
-<img src="/assets/logo.png" alt="TokenMaster Logo" style="height: 40px; width: auto; max-width: 200px; object-fit: contain; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
-<span class="hidden inline-flex items-center justify-center" style="width: 40px; height: 40px; border-radius: 8px; background: var(--primary); color: #fff; font-weight: 700; font-family: 'Space Grotesk', sans-serif;">TM</span>
-</div>
-<div class="hidden md:flex items-center gap-xl">
-                            <a class="text-secondary font-body-md hover:text-primary transition-colors" href="#features" data-i18n="nav.features">Features</a>
-                            <a class="text-secondary font-body-md hover:text-primary transition-colors" href="#pricing" data-i18n="nav.pricing">Pricing</a>
-                            <a class="text-secondary font-body-md hover:text-primary transition-colors" href="#faq" data-i18n="nav.faq">FAQ</a>
-                            <a class="text-secondary font-body-md hover:text-primary transition-colors" href="#" data-i18n="nav.docs">Docs</a>
-                            <a class="text-secondary font-body-md hover:text-primary transition-colors" href="https://api-tokenmaster.com/dashboard" target="_blank" rel="noopener noreferrer" data-i18n="nav.dashboard">Dashboard</a>
-                        </div>
-                        <div class="flex items-center gap-sm md:gap-md">
-                            <a class="hidden sm:inline-flex items-center bg-blue-600 text-white px-md md:px-lg py-sm rounded font-label-md hover:bg-blue-700 transition-all" href="https://api-tokenmaster.com/register" target="_blank" rel="noopener noreferrer" data-i18n="nav.register">Register</a>
-                            <button id="lang-toggle" type="button" aria-label="Switch language" class="lang-toggle-btn flex items-center gap-xs px-sm md:px-md py-sm rounded-full border border-outline-variant text-secondary font-label-md hover:border-primary hover:text-primary transition-all">
-                                <span class="material-symbols-outlined" style="font-size: 16px;">public</span>
-                                <span id="lang-toggle-label">EN</span>
-                            </button>
-                            <button class="bg-[#FF6B35] text-white px-md md:px-lg py-sm rounded font-label-md hover:bg-primary-container transition-all" data-i18n="nav.cta">Get Tokens</button>
-                        </div>
-</nav>
-</header>
+<!-- Section 1: Hero (no own header — New API provides the navbar) -->
 <main>
 <!-- Hero Section -->
 <section class="relative pt-xxl pb-xxl px-gutter">
