@@ -945,12 +945,8 @@
                 return null;
             }
             function readLang() {
-                // Manual override wins.
-                try {
-                    const tm = normalize(localStorage.getItem('tm_lang'));
-                    if (tm) return tm;
-                } catch (e) {}
-                // Common i18next keys (if user opened landing in a non-iframe tab).
+                // Common i18next keys WIN — this is the live language of the host
+                // (New API top-bar) once we live in a same-origin iframe.
                 for (const k of ['i18nextLng', 'i18n.language', 'locale', 'lng']) {
                     try {
                         const v = normalize(localStorage.getItem(k));
@@ -963,10 +959,17 @@
                     const v = normalize(qp.get('lang'));
                     if (v) return v;
                 } catch (e) {}
-                // Browser language last.
+                // Browser language.
                 try {
                     const v = normalize(navigator.language);
                     if (v) return v;
+                } catch (e) {}
+                // Manual override LAST (legacy tm_lang). It only wins when nothing
+                // else is set, so a stale 'en' from a previous session can never
+                // lock us out of following the host's live language.
+                try {
+                    const tm = normalize(localStorage.getItem('tm_lang'));
+                    if (tm) return tm;
                 } catch (e) {}
                 return 'en';
             }
