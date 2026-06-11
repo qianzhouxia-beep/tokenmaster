@@ -38,6 +38,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr, Field
 
 import db
+import newapi_auth
 import redeem
 
 load_dotenv()
@@ -52,8 +53,11 @@ PAYPAL_WEBHOOK_ID = os.environ.get("PAYPAL_WEBHOOK_ID", "")
 NOWPAYMENTS_API_KEY = os.environ.get("NOWPAYMENTS_API_KEY", "")
 NOWPAYMENTS_IPN_SECRET = os.environ.get("NOWPAYMENTS_IPN_SECRET", "")
 NEW_API_BASE_URL = os.environ.get("NEW_API_BASE_URL", "https://api-tokenmaster.com")
-NEW_API_SESSION_COOKIE = os.environ.get("NEW_API_SESSION_COOKIE", "")
-
+# v6.1: session-cookie and root-credential resolution now lives in
+# `newapi_auth.py` so `redeem.py` can share the same auto-login logic
+# without an import cycle. NEW_API_ROOT_USERNAME / NEW_API_ROOT_PASSWORD
+# enable auto-login as a fallback when the static session cookie is
+# missing or expired (HTTP 401), eliminating the 30-day manual rotation.
 _paypal_token = {"access_token": None, "expires_at":0}
 
 # v6 c-path: New API QuotaPerUnit (default 500_000 = 1 USD). Fetched at startup
@@ -67,25 +71,17 @@ app = FastAPI(title="TokenMaster v5 Webhook", version="v5")
 @app.on_event("startup")
 def _startup() -> None:
     db.init_db()
-    # v5 M5: serve landing page + assets as static files so one Zeabur service
-    # owns both the marketing site and the webhook API.
-    # Files vendored at deploy time (Zeabur copies repo root to /app):
-    #   /app/landing/index.html   -> mounted at /landing
-    #   /app/assets/*.png          -> mounted at /assets
+    # v5 M5: also serve the landing page as static files at /landing/* so
+    # one Zeabur service owns both the marketing site and the webhook API.
+    # The landing files are vendored under webhook/landing/ at deploy time
+    # (see deploy/deploy-v5.md for the deploy bundle layout).
     import pathlib
-    base_dir = pathlib.Path(__file__).parent
-    landing_dir = base_dir / "landing"
-    assets_dir = base_dir / "assets"
+    landing_dir = pathlib.Path(__file__).parent / "landing"
     if landing_dir.is_dir():
         app.mount("/landing", StaticFiles(directory=str(landing_dir), html=True), name="landing")
         log.info("landing static mounted at /landing (dir=%s)", landing_dir)
     else:
         log.warning("landing dir not found at %s — /landing will 404", landing_dir)
-    if assets_dir.is_dir():
-        app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
-        log.info("assets static mounted at /assets (dir=%s)", assets_dir)
-    else:
-        log.warning("assets dir not found at %s — /assets will 404", assets_dir)
     # v6 c-path: fetch QuotaPerUnit for USD→quota conversion. Best-effort; on
     # any failure (no cookie / 401 / network) we keep the 500_000 default.
     global _quota_per_unit
@@ -420,6 +416,15 @@ def _mint_redemption_code(order: dict) -> str:
         return f"TM-FALLBACK-{uuid.uuid4().hex[:10].upper()}"
 
 
+# ── v6.1 New API admin auth helper (see newapi_auth.py) ──────────────────
+# All New API call sites go through newapi_auth.get_session() / .headers() to
+# share the auto-login logic with redeem.py. Aliases here keep call sites
+# short and grep-friendly.
+NewAPIAuthError = newapi_auth.NewAPIAuthError
+_newapi_get_session = newapi_auth.get_session
+_newapi_headers = newapi_auth.headers
+
+
 # ── v6 c-path: direct quota grant via New API admin API ──────────────────
 
 
@@ -430,21 +435,26 @@ def _fetch_quota_per_unit() -> int:
     common/constants.go:62). The admin may override via the New API admin UI
     (Settings → QuotaPerUnit), so we read live value rather than hard-coding.
     Falls back to 500_000 on any error (no cookie, 401, network, parse).
+    v6.1: uses _newapi_get_session which auto-logs-in via root creds when no
+    static cookie is set, so Zeabur env can ship with just username/password.
     """
-    if not NEW_API_SESSION_COOKIE:
-        log.warning("QuotaPerUnit fetch skipped: NEW_API_SESSION_COOKIE empty")
-        return 500_000
     try:
         r = requests.get(
             f"{NEW_API_BASE_URL}/api/option/",
             params={"key": "QuotaPerUnit"},
-            headers={
-                "Cookie": f"session={NEW_API_SESSION_COOKIE}",
-                "New-Api-User": "1",
-                "Accept": "application/json",
-            },
+            headers=_newapi_headers(),
             timeout=10,
         )
+        # If our cached session is stale, force a fresh login and retry once.
+        if r.status_code == 401:
+            log.warning("QuotaPerUnit 401, refreshing New API session and retrying")
+            _newapi_get_session(force_refresh=True)
+            r = requests.get(
+                f"{NEW_API_BASE_URL}/api/option/",
+                params={"key": "QuotaPerUnit"},
+                headers=_newapi_headers(),
+                timeout=10,
+            )
         r.raise_for_status()
         body = r.json()
         # New API v1.0.0-rc.10 shape: {"success": true, "data": {"key": "QuotaPerUnit", "value": "500000"}}
@@ -475,25 +485,30 @@ def _grant_quota_via_admin_api(order: dict) -> str | None:
     Returns a marker string for the orders.redemption_code column (audit), or
     None on any failure. Caller should mark the order failed and return 500
     to PayPal so the webhook retries.
+
+    v6.1: session comes from _newapi_get_session; on 401 the helper
+    auto-logs-in and we retry once.
     """
     email = order["email"]
     usd = int(order["usd_amount"])
     quota_to_add = usd * _quota_per_unit
-    if not NEW_API_SESSION_COOKIE:
-        log.error("c-path skip: NEW_API_SESSION_COOKIE empty for order %s", order["id"])
-        return None
     try:
         # Step 1: look up user_id by email
         ur = requests.get(
             f"{NEW_API_BASE_URL}/api/user/",
             params={"keyword": email},
-            headers={
-                "Cookie": f"session={NEW_API_SESSION_COOKIE}",
-                "New-Api-User": "1",
-                "Accept": "application/json",
-            },
+            headers=_newapi_headers(),
             timeout=15,
         )
+        if ur.status_code == 401:
+            log.warning("c-path user-lookup 401, refreshing session and retrying")
+            _newapi_get_session(force_refresh=True)
+            ur = requests.get(
+                f"{NEW_API_BASE_URL}/api/user/",
+                params={"keyword": email},
+                headers=_newapi_headers(),
+                timeout=15,
+            )
         ur.raise_for_status()
         ubody = ur.json()
         users = ubody.get("data")
@@ -512,21 +527,28 @@ def _grant_quota_via_admin_api(order: dict) -> str | None:
         # Step 2: PUT quota delta
         pr = requests.put(
             f"{NEW_API_BASE_URL}/api/user/self/?id={user_id}",
-            headers={
-                "Cookie": f"session={NEW_API_SESSION_COOKIE}",
-                "New-Api-User": "1",
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-            },
+            headers=_newapi_headers(),
             json={"quota": quota_to_add},
             timeout=15,
         )
+        if pr.status_code == 401:
+            log.warning("c-path quota PUT 401, refreshing session and retrying")
+            _newapi_get_session(force_refresh=True)
+            pr = requests.put(
+                f"{NEW_API_BASE_URL}/api/user/self/?id={user_id}",
+                headers=_newapi_headers(),
+                json={"quota": quota_to_add},
+                timeout=15,
+            )
         pr.raise_for_status()
         log.info(
             "PayPal webhook processed, user_id=%s, quota_added=%d, order_id=%s",
             user_id, quota_to_add, order["id"],
         )
         return f"cpath:user={user_id},+{quota_to_add}"
+    except NewAPIAuthError as e:
+        log.error("c-path auth failed for order %s: %s", order["id"], e)
+        return None
     except Exception as e:
         log.exception("c-path grant failed for order %s: %s", order["id"], e)
         return None
@@ -567,6 +589,56 @@ def test_redeem(payload: TestRedeemIn):
         log.exception("test-redeem failed")
         raise HTTPException(500, f"redemption call failed: {type(e).__name__}: {e}")
     return TestRedeemOut(status="ok", code=code, sku=payload.sku, email=payload.email)
+
+
+# v6 c-path UX: client JS polls this endpoint on pay.api-tokenmaster.com
+# (same subdomain, no CORS) to surface the post-payment balance to the user
+# without leaking the admin session. We use the server-side admin session
+# (NEW_API_SESSION_COOKIE env) to call New API on the user's behalf, then
+# return only the quota + a USD-denominated balance derived from
+# QuotaPerUnit. Client passes ?user_id=<id> (already known to the client
+# from its own New API session, not the admin session).
+@app.get("/api/user/balance/polling")
+def balance_polling(user_id: int) -> dict:
+    """Proxy GET /api/user/self/?id={user_id} to New API using admin session.
+
+    Returns a small JSON payload with quota + USD balance. The user_id is
+    passed by the client (it knows its own id from its user login); the
+    admin session is server-side only and never returned to the client.
+    """
+    if user_id <= 0:
+        raise HTTPException(400, "user_id required")
+    try:
+        r = requests.get(
+            f"{NEW_API_BASE_URL}/api/user/self/?id={user_id}",
+            headers=_newapi_headers(),
+            timeout=10,
+        )
+        if r.status_code == 401:
+            log.warning("balance-polling 401, refreshing session and retrying")
+            _newapi_get_session(force_refresh=True)
+            r = requests.get(
+                f"{NEW_API_BASE_URL}/api/user/self/?id={user_id}",
+                headers=_newapi_headers(),
+                timeout=10,
+            )
+        r.raise_for_status()
+        body = r.json()
+        data = body.get("data") if isinstance(body, dict) else None
+        if not isinstance(data, dict):
+            raise HTTPException(502, f"New API returned unexpected body: {body!r}")
+        quota = data.get("quota", 0)
+        # USD = quota / QuotaPerUnit (default 500_000; fetched at startup)
+        qpu = _quota_per_unit if _quota_per_unit else 500_000
+        balance_usd = (quota / qpu) if qpu else 0
+        return {"user_id": user_id, "quota": quota, "balance_usd": round(balance_usd, 4)}
+    except requests.HTTPError as e:
+        status = e.response.status_code if e.response is not None else 500
+        log.exception("balance-polling New API HTTP error")
+        raise HTTPException(status, f"New API HTTP error: {e}")
+    except Exception as e:
+        log.exception("balance-polling failed")
+        raise HTTPException(500, f"balance lookup failed: {type(e).__name__}: {e}")
 
 
 if __name__ == "__main__":
