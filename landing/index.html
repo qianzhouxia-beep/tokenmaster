@@ -88,6 +88,7 @@
                       "base": "4px",
                       "md": "16px",
                       "xxl": "80px",
+                      "3xl": "120px",
                       "lg": "24px",
                       "xs": "4px",
                       "xl": "40px",
@@ -178,7 +179,7 @@
 <!-- Section 1: Hero (no own header — New API provides the navbar) -->
 <main>
 <!-- Hero Section -->
-<section class="relative pt-xxl pb-xxl px-gutter">
+<section class="relative pt-3xl pb-xxl px-gutter">
 <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-xl">
 <div class="lg:w-1/2 space-y-lg">
                     <h1 class="text-on-surface leading-tight" style="font-family: 'Space Grotesk', sans-serif; font-size: clamp(2.25rem, 5vw, 3.5rem); font-weight: 700; line-height: 1.05; letter-spacing: -0.03em; text-wrap: balance;" data-i18n="hero.title">
@@ -521,6 +522,11 @@
 </div>
 </div>
 </footer>
+    <!-- v6.6: floating language toggle (replaces the removed header button) -->
+    <button id="lang-toggle" type="button" aria-label="Switch language" class="lang-toggle-btn fixed bottom-6 right-6 z-50 flex items-center gap-xs px-md py-sm rounded-full border border-outline-variant text-secondary font-label-md hover:border-primary hover:text-primary transition-all" style="background: var(--surface-bright); box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+        <span class="material-symbols-outlined ms-fallback-globe" style="font-size: 16px;">public</span>
+        <span id="lang-toggle-label">EN</span>
+    </button>
     <script>
         // ============ I18N ============
         const I18N = {
