@@ -921,27 +921,68 @@
             }
         })();
 
-// ============ LANG TOGGLE + INIT ============
+// ============ LANG TOGGLE + INIT (v6.7: follow New API i18nextLng) ============
         (function initLang() {
-            let saved = 'en';
-            try {
-                const stored = localStorage.getItem('tm_lang');
-                if (stored && (stored === 'en' || stored === 'zh')) saved = stored;
-                else if (navigator.language && navigator.language.toLowerCase().startsWith('zh')) saved = 'zh';
-            } catch (e) {}
-            console.log('[initLang] saved=', saved);
-            try { applyLang(saved); } catch (e) { console.error('[initLang] applyLang error:', e); }
+            function readLang() {
+                // 1st priority: New API's i18next localStorage key ('i18nextLng').
+                //    When the host New API page (or user) changes language, this
+                //    iframe is on the same origin so localStorage is shared and the
+                //    'storage' event below also fires for live updates.
+                // 2nd: our own 'tm_lang' override (set by the floating button below).
+                // 3rd: browser language.
+                // 4th: en.
+                try {
+                    const i18nStored = localStorage.getItem('i18nextLng');
+                    if (i18nStored) {
+                        const n = i18nStored.trim().toLowerCase().replace(/_/g, '-');
+                        if (n.startsWith('zh')) return 'zh';
+                        if (n === 'en' || n.startsWith('en')) return 'en';
+                    }
+                } catch (e) {}
+                try {
+                    const tmStored = localStorage.getItem('tm_lang');
+                    if (tmStored === 'en' || tmStored === 'zh') return tmStored;
+                } catch (e) {}
+                try {
+                    if (navigator.language && navigator.language.toLowerCase().startsWith('zh')) return 'zh';
+                } catch (e) {}
+                return 'en';
+            }
+            const initial = readLang();
+            console.log('[initLang] initial=', initial);
+            try { applyLang(initial); } catch (e) { console.error('[initLang] applyLang error:', e); }
             const toggle = document.getElementById('lang-toggle');
-            console.log('[initLang] toggle element:', toggle);
             if (toggle) {
                 toggle.addEventListener('click', (e) => {
                     e.preventDefault();
-                    console.log('[toggle click]');
                     const cur = (document.documentElement.lang || 'en').startsWith('zh') ? 'zh' : 'en';
-                    try { applyLang(cur === 'zh' ? 'en' : 'zh'); } catch (e) { console.error('[toggle] applyLang error:', e); }
+                    const next = cur === 'zh' ? 'en' : 'zh';
+                    try {
+                        // Write both keys so the host New API also picks up our manual choice
+                        // (i18next reads 'i18nextLng' on next navigation/reload).
+                        localStorage.setItem('tm_lang', next);
+                        try { localStorage.setItem('i18nextLng', next); } catch (e) {}
+                        applyLang(next);
+                    } catch (e) { console.error('[toggle] applyLang error:', e); }
                 });
-                console.log('[initLang] toggle handler bound');
             }
+            // Live sync: when New API (same tab) changes i18nextLng, follow it.
+            // Same-origin iframe shares localStorage; the 'storage' event fires in
+            // the iframe for cross-document storage changes (it does NOT fire in
+            // the document that wrote the value, so we also re-read on focus).
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'i18nextLng' || e.key === 'tm_lang') {
+                    const next = readLang();
+                    try { applyLang(next); } catch (err) { console.error('[storage] applyLang error:', err); }
+                }
+            });
+            window.addEventListener('focus', () => {
+                const next = readLang();
+                const cur = (document.documentElement.lang || 'en').startsWith('zh') ? 'zh' : 'en';
+                if (next !== cur) {
+                    try { applyLang(next); } catch (err) { console.error('[focus] applyLang error:', err); }
+                }
+            });
         })();
     </script>
 
