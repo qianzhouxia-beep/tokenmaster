@@ -171,7 +171,7 @@
 <header class="sticky top-0 w-full z-50 bg-surface-bright/80 backdrop-blur-md border-b border-outline-variant">
 <nav class="flex justify-between items-center px-gutter py-md max-w-7xl mx-auto">
 <div class="flex items-center gap-sm">
-<img src="assets/logo.png" alt="TokenMaster Logo" style="height: 40px; width: auto; max-width: 200px; object-fit: contain; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
+<img src="/assets/logo.png" alt="TokenMaster Logo" style="height: 40px; width: auto; max-width: 200px; object-fit: contain; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
 <span class="hidden inline-flex items-center justify-center" style="width: 40px; height: 40px; border-radius: 8px; background: var(--primary); color: #fff; font-weight: 700; font-family: 'Space Grotesk', sans-serif;">TM</span>
 </div>
 <div class="hidden md:flex items-center gap-xl">
@@ -775,23 +775,103 @@
             });
         });
 
-        // ============ CTA WIRE ============
+// ============ CTA WIRE -> Checkout Modal ============
         (function wireCheckout() {
             const skuMap = {
                 'cta-hero-main': 'starter_v6',
                 'buy-starter': 'starter_v6',
                 'buy-growth': 'indie_v6',
-                'buy-pro': 'team_v6',
-                'buy-enterprise': 'enterprise'
+                'buy-pro': 'team_v6'
+                // 'buy-enterprise' keeps its native link to /contact.html
+            };
+            const skuLabel = {
+                'starter_v6': 'Starter · $15 / 20M tokens',
+                'indie_v6':   'Indie · $35 / 50M tokens',
+                'team_v6':    'Team · $80 / 150M tokens'
+            };
+            const skuPrice = {
+                'starter_v6': 15,
+                'indie_v6': 35,
+                'team_v6': 80
             };
             Object.entries(skuMap).forEach(([id, sku]) => {
                 const btn = document.getElementById(id);
                 if (!btn) return;
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
-                    window.location.href = '/checkout?sku=' + sku;
+                    openCheckoutModal(sku);
                 });
             });
+
+            function openCheckoutModal(sku) {
+                const skuText = skuLabel[sku] || sku;
+                const skuUsd = skuPrice[sku] || 0;
+                const overlay = document.createElement('div');
+                overlay.id = 'checkout-overlay';
+                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+                overlay.innerHTML = `
+                    <div style="background:white;border-radius:16px;max-width:480px;width:100%;padding:32px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
+                        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:24px;">
+                            <div>
+                                <h2 style="font-size:24px;font-weight:700;margin:0 0 4px 0;color:#1a1a1a;">Buy tokens</h2>
+                                <p style="font-size:14px;color:#666;margin:0;">${skuText}</p>
+                            </div>
+                            <button id="checkout-close" type="button" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;padding:0;width:32px;height:32px;line-height:1;">×</button>
+                        </div>
+                        <form id="checkout-form" style="display:flex;flex-direction:column;gap:16px;">
+                            <label style="display:flex;flex-direction:column;gap:6px;">
+                                <span style="font-size:14px;font-weight:600;color:#333;">Email <span style="color:#d44;">*</span></span>
+                                <input type="email" name="email" required placeholder="[email protected]" style="padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:15px;outline:none;" />
+                            </label>
+                            <label style="display:flex;flex-direction:column;gap:6px;">
+                                <span style="font-size:14px;font-weight:600;color:#333;">Payment method <span style="color:#d44;">*</span></span>
+                                <select name="payment_method" required style="padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:15px;outline:none;background:white;">
+                                    <option value="paypal">PayPal (credit card, debit, PayPal balance)</option>
+                                    <option value="nowpayments">NOWPayments (USDT / USDC / BTC / ETH)</option>
+                                </select>
+                            </label>
+                            <div id="checkout-error" style="display:none;color:#d44;font-size:14px;background:#fef2f2;border:1px solid #fecaca;padding:10px 12px;border-radius:8px;"></div>
+                            <button type="submit" id="checkout-submit" style="background:#FF6B35;color:white;border:none;padding:14px;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;margin-top:8px;">Pay $${skuUsd} & continue</button>
+                            <p style="font-size:12px;color:#888;margin:0;text-align:center;">Tokens are issued to your account instantly after payment. 14-day refund on unused tokens.</p>
+                        </form>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+                document.getElementById('checkout-close').onclick = () => overlay.remove();
+                overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+                document.getElementById('checkout-form').onsubmit = async (e) => {
+                    e.preventDefault();
+                    const form = e.target;
+                    const email = form.email.value.trim();
+                    const method = form.payment_method.value;
+                    const submit = document.getElementById('checkout-submit');
+                    const errBox = document.getElementById('checkout-error');
+                    errBox.style.display = 'none';
+                    submit.disabled = true;
+                    submit.textContent = 'Creating order...';
+                    try {
+                        const resp = await fetch('/create-order', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({email, sku_id: sku, payment_method: method})
+                        });
+                        const data = await resp.json().catch(() => ({}));
+                        if (!resp.ok) {
+                            throw new Error(data.detail || ('HTTP ' + resp.status));
+                        }
+                        if (!data.payment_url) {
+                            throw new Error('No payment_url in response');
+                        }
+                        submit.textContent = 'Redirecting to payment...';
+                        window.location.href = data.payment_url;
+                    } catch (err) {
+                        errBox.textContent = 'Failed to create order: ' + err.message;
+                        errBox.style.display = 'block';
+                        submit.disabled = false;
+                        submit.textContent = 'Pay $' + skuUsd + ' & continue';
+                    }
+                };
+            }
         })();
 
 // ============ LANG TOGGLE + INIT ============

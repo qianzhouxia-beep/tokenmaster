@@ -67,17 +67,25 @@ app = FastAPI(title="TokenMaster v5 Webhook", version="v5")
 @app.on_event("startup")
 def _startup() -> None:
     db.init_db()
-    # v5 M5: also serve the landing page as static files at /landing/* so
-    # one Zeabur service owns both the marketing site and the webhook API.
-    # The landing files are vendored under webhook/landing/ at deploy time
-    # (see deploy/deploy-v5.md for the deploy bundle layout).
+    # v5 M5: serve landing page + assets as static files so one Zeabur service
+    # owns both the marketing site and the webhook API.
+    # Files vendored at deploy time (Zeabur copies repo root to /app):
+    #   /app/landing/index.html   -> mounted at /landing
+    #   /app/assets/*.png          -> mounted at /assets
     import pathlib
-    landing_dir = pathlib.Path(__file__).parent / "landing"
+    base_dir = pathlib.Path(__file__).parent
+    landing_dir = base_dir / "landing"
+    assets_dir = base_dir / "assets"
     if landing_dir.is_dir():
         app.mount("/landing", StaticFiles(directory=str(landing_dir), html=True), name="landing")
         log.info("landing static mounted at /landing (dir=%s)", landing_dir)
     else:
         log.warning("landing dir not found at %s — /landing will 404", landing_dir)
+    if assets_dir.is_dir():
+        app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
+        log.info("assets static mounted at /assets (dir=%s)", assets_dir)
+    else:
+        log.warning("assets dir not found at %s — /assets will 404", assets_dir)
     # v6 c-path: fetch QuotaPerUnit for USD→quota conversion. Best-effort; on
     # any failure (no cookie / 401 / network) we keep the 500_000 default.
     global _quota_per_unit
