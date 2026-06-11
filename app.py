@@ -82,6 +82,14 @@ def _startup() -> None:
         log.info("landing static mounted at /landing (dir=%s)", landing_dir)
     else:
         log.warning("landing dir not found at %s — /landing will 404", landing_dir)
+    # v6.4: also mount /assets (hero.png, logo.png, enterprise-security.png) so
+    # landing.html's absolute <img src="/assets/hero.png?v=1"> resolves.
+    assets_dir = pathlib.Path(__file__).parent / "assets"
+    if assets_dir.is_dir():
+        app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
+        log.info("assets static mounted at /assets (dir=%s)", assets_dir)
+    else:
+        log.warning("assets dir not found at %s — /assets will 404", assets_dir)
     # v6 c-path: fetch QuotaPerUnit for USD→quota conversion. Best-effort; on
     # any failure (no cookie / 401 / network) we keep the 500_000 default.
     global _quota_per_unit
