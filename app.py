@@ -33,6 +33,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr, Field
@@ -66,6 +67,21 @@ _paypal_token = {"access_token": None, "expires_at":0}
 _quota_per_unit: int = 500_000
 
 app = FastAPI(title="TokenMaster v5 Webhook", version="v5")
+
+# v6.14: CORS for the landing page (which lives on api-tokenmaster.com
+# via Cloudflare reverse proxy) to call /create-order on the webhook
+# service (pay.api-tokenmaster.com). Without this, the browser blocks
+# the cross-origin fetch from the iframe.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://api-tokenmaster.com",
+        "https://pay.api-tokenmaster.com",
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
+)
 
 
 @app.on_event("startup")

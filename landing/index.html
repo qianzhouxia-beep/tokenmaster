@@ -894,7 +894,11 @@
                     submit.disabled = true;
                     submit.textContent = submittingText;
                     try {
-                        const resp = await fetch('/create-order', {
+                        // v6.14: absolute URL — iframe is on api-tokenmaster.com (Cloudflare
+                        // reverse proxy) but the webhook service is on pay.api-tokenmaster.com
+                        // (Zeabur). A relative '/create-order' would hit the New API static page,
+                        // never the webhook. Always use the absolute pay subdomain.
+                        const resp = await fetch('https://pay.api-tokenmaster.com/create-order', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
                             body: JSON.stringify({email, sku_id: sku, payment_method: method})
