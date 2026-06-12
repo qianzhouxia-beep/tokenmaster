@@ -156,7 +156,7 @@ def _paypal_get_access_token() -> str:
         f"{PAYPAL_API_BASE}/v1/oauth2/token",
         headers={"Authorization": f"Basic {auth}", "Accept": "application/json"},
         data={"grant_type": "client_credentials"},
-        timeout=15,
+        timeout=5,
     )
     r.raise_for_status()
     body = r.json()
@@ -186,7 +186,7 @@ def _paypal_create_checkout(sku, email):
         f"{PAYPAL_API_BASE}/v2/checkout/orders",
         headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"},
         json=payload,
-        timeout=15,
+        timeout=5,
     )
     r.raise_for_status()
     body = r.json()
