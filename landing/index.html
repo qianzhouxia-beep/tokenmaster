@@ -1315,17 +1315,32 @@
                     submitBtn.textContent = typeof t === 'function' ? t('checkout.paying') : '\u6b63\u5728\u652f\u4ed8\u4e2d…';
                     submitBtn.style.background = '#d97706';
 
-                    // Open PayPal in a new tab (noopener prevents PayPal hijacking parent)
-                    let opened = false;
+                    // Open PayPal in a new tab. We use a real <form target="_blank">
+                    // + form.submit() rather than window.open() because Chrome's
+                    // popup blocker reliably kills window.open() when it is
+                    // called after an await fetch() (the user-gesture token
+                    // expires across the await). form.submit(target=_blank)
+                    // inherits the gesture and reliably opens a new tab.
+                    //
+                    // The form's action is the PayPal payment URL and method=GET
+                    // so it becomes a real navigation. noopener on the form
+                    // (well, we can't put it on a form, so we rely on
+                    // target=_blank + the browser's same-origin policy for
+                    // window.opener) prevents PayPal from grabbing the parent.
+                    const f = document.createElement('form');
+                    f.method = 'GET';
+                    f.action = paymentUrl;
+                    f.target = '_blank';
+                    f.rel = 'noopener noreferrer';
+                    f.style.display = 'none';
+                    document.body.appendChild(f);
                     try {
-                        const w = window.open(paymentUrl, '_blank', 'noopener,noreferrer');
-                        opened = !!w;
-                    } catch (_) { opened = false; }
-                    if (!opened) {
-                        // Popup blocked — keep modal in "paying" state silently.
-                        // No error text exposed to user. Modal stays open with
-                        // email + method visible, button shows "\u6b63\u5728\u652f\u4ed8\u4e2d…".
-                        if (window.console) console.warn('[TokenMaster] Popup blocked');
+                        f.submit();
+                    } catch (err) {
+                        // Last-ditch fallback: if even the form submit fails
+                        // (e.g. Safari private mode), try window.open.
+                        if (window.console) console.warn('[TokenMaster] form.submit failed, fallback to window.open', err);
+                        try { window.open(paymentUrl, '_blank', 'noopener,noreferrer'); } catch (_) {}
                     }
 
                     // Poll /orders/{id} every 1s, max 90s
