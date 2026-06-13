@@ -528,6 +528,13 @@
 </div>
 </div>
 </footer>
+    <!-- v6.28.6: payment-in-progress banner. Hidden by default; the
+         modal submit handler shows it after creating the order and
+         turns it green once /orders/{id} reports status=completed. -->
+    <div id="tm-pay-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:10000;padding:14px 20px;background:#0c4a6e;color:white;text-align:center;font-size:14px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,0.15);cursor:pointer;">
+        <span id="tm-pay-banner-icon" style="margin-right:8px;">⏳</span>
+        <span id="tm-pay-banner-text">Payment in progress — finish in the new tab.</span>
+    </div>
     <script>
         // ============ I18N ============
         const I18N = {
@@ -639,6 +646,9 @@
                 'checkout.error_prefix': 'Failed to create order:',
                 'checkout.error_no_url': 'No payment_url in response',
                 'checkout.footnote': 'Tokens are issued to your account instantly after payment. 14-day refund on unused tokens.',
+                'checkout.banner_pending': 'Payment in progress — finish in the new tab.',
+                'checkout.banner_paid': 'Payment received ✓ — check your email for the redemption code.',
+                'checkout.banner_failed': 'Payment failed or timed out. Contact billing@api-tokenmaster.com if you were charged.',
                 'checkout.need_signin': 'Please sign in or create a free TokenMaster account first.',
                 'checkout.need_signin_hint': 'We need a verified account to deliver your tokens.',
                 'checkout.signed_in_as': 'Signed in as',
@@ -757,6 +767,9 @@
                 'checkout.error_prefix': '创建订单失败:',
                 'checkout.error_no_url': '响应中没有 payment_url',
                 'checkout.footnote': '支付完成后 tokens 立即到账。未使用的 tokens 支持 14 天无理由退款。',
+                'checkout.banner_pending': '支付进行中 — 请在新标签页完成支付。',
+                'checkout.banner_paid': '支付完成 ✓ — 请查收邮件获取兑换码。',
+                'checkout.banner_failed': '支付失败或超时。如果您已被扣款,请联系 billing@api-tokenmaster.com。',
                 'checkout.need_signin': '请先登录或注册一个免费的 TokenMaster 账号。',
                 'checkout.need_signin_hint': '我们需要一个已验证的账号来给您发放 tokens。',
                 'checkout.signed_in_as': '已登录身份',
@@ -1100,32 +1113,125 @@
                     errBox.style.display = 'none';
                     submitBtn.disabled = true;
                     submitBtn.textContent = redirectingText;
-                    // v6.26: target=_blank so PayPal opens in a new tab; the
-                    // New API tab stays where it is. v6.28 adds newapi_username
-                    // so the order can be cross-referenced with the New API
-                    // account that just paid (auditing + future auto-top-up).
-                    const params = new URLSearchParams({
+
+                    // v6.28.6: POST /create-order first so we get the
+                    // order_id, then open the returned payment_url in a
+                    // new tab, then poll /orders/{id} every 1s until
+                    // status becomes completed (webhook fired) or 90s
+                    // timeout. The banner at the top of the page replaces
+                    // the modal as the source of truth — the user no
+                    // longer stares at a "Redirecting..." button forever.
+                    const payload = {
                         sku_id: sku,
                         email: email,
                         payment_method: method,
-                    });
-                    if (tmUser && tmUser.username) params.set('newapi_username', tmUser.username);
-                    const payUrl = 'https://pay.api-tokenmaster.com/checkout/redirect?' + params.toString();
-                    const a = document.createElement('a');
-                    a.href = payUrl;
-                    a.target = '_blank';
-                    a.rel = 'noopener noreferrer';
-                    a.style.display = 'none';
-                    document.body.appendChild(a);
+                    };
+                    if (tmUser && tmUser.username) payload.newapi_username = tmUser.username;
+
+                    let orderId, paymentUrl;
+                    try {
+                        const r = await fetch('https://pay.api-tokenmaster.com/create-order', {
+                            method: 'POST',
+                            credentials: 'omit',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload),
+                        });
+                        if (!r.ok) {
+                            errBox.textContent = errPrefix + ' HTTP ' + r.status;
+                            errBox.style.display = 'block';
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = btnText;
+                            return;
+                        }
+                        const data = await r.json();
+                        orderId = data.order_id;
+                        paymentUrl = data.payment_url;
+                        if (!orderId || !paymentUrl) {
+                            errBox.textContent = errPrefix + ' ' + errNoUrl;
+                            errBox.style.display = 'block';
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = btnText;
+                            return;
+                        }
+                    } catch (err) {
+                        errBox.textContent = errPrefix + ' ' + (err && err.message || err);
+                        errBox.style.display = 'block';
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = btnText;
+                        return;
+                    }
+
+                    // Close modal, show banner, open new tab
+                    overlay.remove();
+                    showPaymentBanner('pending', orderId);
+
                     let opened = false;
-                    try { a.click(); opened = true; } catch (_) { opened = false; }
+                    try {
+                        const w = window.open(paymentUrl, '_blank', 'noopener,noreferrer');
+                        opened = !!w;
+                    } catch (_) { opened = false; }
                     if (!opened) {
-                        try { const w = window.open(payUrl, '_blank'); opened = !!w; } catch (_) {}
+                        // Fallback: same-tab navigation if popup blocked.
+                        // Still start polling so banner updates when paid.
+                        window.location.href = paymentUrl;
+                        return;
                     }
-                    if (!opened) {
-                        window.location.href = payUrl;
-                    }
+
+                    // Poll /orders/{id} every 1s, max 90s
+                    const POLL_INTERVAL_MS = 1000;
+                    const POLL_MAX_MS = 90000;
+                    const t0 = Date.now();
+                    const pollTimer = setInterval(async () => {
+                        if (Date.now() - t0 > POLL_MAX_MS) {
+                            clearInterval(pollTimer);
+                            showPaymentBanner('failed', orderId);
+                            return;
+                        }
+                        try {
+                            const r = await fetch('https://pay.api-tokenmaster.com/orders/' + orderId, {
+                                credentials: 'omit',
+                                cache: 'no-store',
+                            });
+                            if (!r.ok) return;
+                            const o = await r.json();
+                            // backend writes status='completed' on webhook fire
+                            if (o.status === 'completed' || o.status === 'paid') {
+                                clearInterval(pollTimer);
+                                showPaymentBanner('paid', orderId);
+                            } else if (typeof o.status === 'string' && o.status.startsWith('failed:')) {
+                                clearInterval(pollTimer);
+                                showPaymentBanner('failed', orderId);
+                            }
+                        } catch (_) { /* keep polling on transient errors */ }
+                    }, POLL_INTERVAL_MS);
                 };
+
+                // v6.28.6: top-of-page banner replacing the old modal
+                // "Redirecting..." deadlock. The user can click it to
+                // re-focus the payment tab if they closed it.
+                function showPaymentBanner(state, orderId) {
+                    const el = document.getElementById('tm-pay-banner');
+                    const iconEl = document.getElementById('tm-pay-banner-icon');
+                    const textEl = document.getElementById('tm-pay-banner-text');
+                    if (!el) return;
+                    const textMap = {
+                        pending: t('checkout.banner_pending'),
+                        paid:    t('checkout.banner_paid'),
+                        failed:  t('checkout.banner_failed'),
+                    };
+                    textEl.textContent = (textMap[state] || state) + (orderId ? ' (' + orderId + ')' : '');
+                    if (state === 'paid') {
+                        el.style.background = '#166534';
+                        iconEl.textContent = '✓';
+                    } else if (state === 'failed') {
+                        el.style.background = '#991b1b';
+                        iconEl.textContent = '✕';
+                    } else {
+                        el.style.background = '#0c4a6e';
+                        iconEl.textContent = '⏳';
+                    }
+                    el.style.display = 'block';
+                }
 
                 checkSession();
             }
