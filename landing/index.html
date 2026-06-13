@@ -1371,6 +1371,38 @@
             }
         })();
 
+// ============ v6.30: BREAK-OUT-OF-IFRAME BOOTSTRAP ============
+// Reality: New API's home iframe is a plain <iframe src=...> with NO
+// sandbox. PayPal's checkoutnow page runs `top.location = ...` (or
+// `window.top.location = ...`) and hijacks the *parent* New API tab,
+// turning it into a PayPal page in the SAME tab. The user's complaint
+// is: "I see TWO PayPal pages after I click Pay" — one in the new
+// tab we opened, one in the original api-tokenmaster.com tab.
+//
+// The fix is to make the landing page the *top-level document* before
+// any PayPal code ever runs. We do that by detecting "am I in an
+// iframe?" on first load and replacing the top window's URL with our
+// own. From then on, window.open() / <a target=_blank> / window.top
+// all refer to the SAME top frame, and PayPal's hijack attempt is
+// self-referential — it just reloads our own page, which is harmless.
+//
+// We use a per-page `?escaped=1` flag to avoid an infinite reload loop
+// if the rewrite somehow fails.
+(function () {
+    try {
+        if (window.self === window.top) return;        // already top-level
+        if (window.top.location.host === window.location.host) return; // same origin parent, harmless
+        // Different-origin parent (typical: New API shell on api-tokenmaster.com
+        // embedding pay.api-tokenmaster.com). Break out.
+        var url = window.location.href;
+        if (url.indexOf('escaped=1') === -1) {
+            // Replace top frame. We use replace() (not href=) so the
+            // broken parent URL is not in the back-button history.
+            window.top.location.replace(url + (url.indexOf('?') >= 0 ? '&' : '?') + 'escaped=1');
+        }
+    } catch (_) { /* cross-origin access throws — that's the signal we wanted */ }
+})();
+
 // ============ LANG TOGGLE + INIT (v6.8) ============
 // Reality check: this iframe is on `pay.api-tokenmaster.com` while the host New
 // API page is on `api-tokenmaster.com` — different origins. localStorage is
