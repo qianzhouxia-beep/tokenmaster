@@ -1245,11 +1245,25 @@
                     }
                 }
 
+                // v6.36.1: dedup guard. Same email + same submit within 5s
+                // → bail out with a friendly notice. Prevents double-popup
+                // when user double-clicks "Pay" before the first submit
+                // finishes its await.
+                let _lastSubmitKey = '';
+                let _lastSubmitAt = 0;
                 formEl.onsubmit = async (e) => {
                     e.preventDefault();
                     const form = e.target;
                     const email = form.email.value.trim();
                     const method = form.payment_method.value;
+                    const submitKey = email + '|' + method;
+                    const now = Date.now();
+                    if (submitKey === _lastSubmitKey && (now - _lastSubmitAt) < 5000) {
+                        if (window.console) console.warn('[TokenMaster] duplicate submit within 5s, ignored');
+                        return;
+                    }
+                    _lastSubmitKey = submitKey;
+                    _lastSubmitAt = now;
                     errBox.style.display = 'none';
                     submitBtn.disabled = true;
                     submitBtn.textContent = redirectingText;
@@ -1315,64 +1329,41 @@
                     submitBtn.textContent = typeof t === 'function' ? t('checkout.paying') : '\u6b63\u5728\u652f\u4ed8\u4e2d…';
                     submitBtn.style.background = '#d97706';
 
-                    // v6.36: open PayPal in a new tab. We try the path
-                    // most likely to beat the popup-blocker FIRST
-                    // (synchronous window.open) so the user-gesture token
-                    // is consumed while the call stack is still hot from
-                    // the click. If window.open is blocked (cross-origin
-                    // iframe where the gesture doesn't propagate to the
-                    // popup, or strict popup blocker), we fall through
-                    // to <form target="_blank" action=... method=GET>
-                    // + form.submit(), which inherits the gesture and
-                    // opens a new tab reliably. Final fallback is a
-                    // top-level navigation — that does cause a tab
-                    // change, but at least the buyer lands on PayPal
-                    // instead of staring at a "Payment failed or timed
-                    // out" modal.
+                    // v6.36.1: open PayPal in a new tab.
+                    // We use form.submit(target=_blank) because that is
+                    // the ONLY reliable way to beat Chrome's popup blocker
+                    // when called from a cross-origin iframe (the
+                    // user-gesture token does NOT survive the await fetch
+                    // above, so window.open() returns null 100% of the
+                    // time in this context — v6.36 trying window.open
+                    // first caused double-popup: a blocked null + a form
+                    // submit that did open). form.submit() inherits the
+                    // gesture and opens a new tab reliably.
                     //
-                    // Background: v6.35 used form.submit() as the
-                    // primary path; the 00:36 modal-stuck failure
-                    // suggests the cross-origin iframe context
-                    // (landing served from inside api-tokenmaster.com's
-                    // frame) sometimes lets the form submit reparent
-                    // the parent frame instead of opening a new tab.
-                    // Trying window.open first makes the popup
-                    // authoritative and isolates the failure.
-                    let opened = false;
+                    // Last-ditch fallback: if form creation throws
+                    // (private-browsing, etc.), do a top-level nav.
                     try {
-                        const w = window.open(paymentUrl, '_blank', 'noopener,noreferrer');
-                        opened = !!(w && typeof w === 'object');
+                        const f = document.createElement('form');
+                        f.method = 'GET';
+                        f.action = paymentUrl;
+                        f.target = '_blank';
+                        f.rel = 'noopener noreferrer';
+                        f.style.display = 'none';
+                        document.body.appendChild(f);
+                        f.submit();
+                        // Don't remove the form — removing it
+                        // synchronously can cancel the in-flight
+                        // navigation in some browsers. The next
+                        // modal close will garbage-collect it.
                     } catch (err) {
-                        if (window.console) console.warn('[TokenMaster] window.open threw, falling back to form.submit', err);
-                    }
-                    if (!opened) {
+                        if (window.console) console.warn('[TokenMaster] form.submit failed, falling back to top-level nav', err);
                         try {
-                            const f = document.createElement('form');
-                            f.method = 'GET';
-                            f.action = paymentUrl;
-                            f.target = '_blank';
-                            f.rel = 'noopener noreferrer';
-                            f.style.display = 'none';
-                            document.body.appendChild(f);
-                            f.submit();
-                            // Don't remove the form — removing it
-                            // synchronously can cancel the in-flight
-                            // navigation in some browsers. The next
-                            // modal close will garbage-collect it.
-                        } catch (err) {
-                            if (window.console) console.warn('[TokenMaster] form.submit failed, falling back to top-level navigation', err);
-                            try {
-                                // Last-ditch: navigate the top frame so
-                                // the buyer at least lands on PayPal.
-                                // This WILL change the current tab.
-                                window.top.location.href = paymentUrl;
-                            } catch (_) {
-                                // If even top-level navigation is blocked
-                                // (sandboxed iframe with allow-top-
-                                // navigation disabled), give up and let
-                                // the polling show "Payment failed".
-                                if (window.console) console.error('[TokenMaster] all payment-tab open strategies failed');
-                            }
+                            // Last-ditch: navigate the top frame so
+                            // the buyer at least lands on PayPal.
+                            // This WILL change the current tab.
+                            window.top.location.href = paymentUrl;
+                        } catch (_) {
+                            if (window.console) console.error('[TokenMaster] all payment-tab open strategies failed');
                         }
                     }
 
