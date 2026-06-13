@@ -90,11 +90,16 @@ def create_redemption(sku: str, email: str) -> str:
         )
 
     quota = QUOTA_MAP[sku]
+    # v6.21: New API v1.0.0-rc.10 validates `expired_time` strictly: if non-zero
+    # and < now → reject with "服务器时间与当前时间不符". The old code passed
+    # -1 thinking "never expires", but -1 < any positive now → rejected.
+    # Use a real far-future timestamp (10 years out) instead. epoch seconds
+    # for 2036-01-01 = 2082758400.
     payload = {
         "name": f"Topup ${sku}",
         "count": 1,
         "quota": quota,
-        "expired_time": -1,
+        "expired_time": 2082758400,
     }
     url = f"{NEW_API_BASE_URL}/api/redemption/"
     log.info(
