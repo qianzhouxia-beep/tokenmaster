@@ -453,19 +453,14 @@ def paypal_return(token: str) -> HTMLResponse:
             "If you were charged, please contact billing@api-tokenmaster.com.</p>",
             status_code=200,
         )
-    # v6.27: if the order is still pending after capture, do the c-path
-    # mint + email right here so the user is not blocked on a slow or
-    # missed webhook. The webhook handler is idempotent (it re-checks
-    # status before doing anything), so when the webhook does fire
-    # later it will just no-op.
-    if row.get("status") == "pending":
-        try:
-            code = redeem.create_redemption(row["sku_id"], row["email"])
-            db.mark_paid(row["id"], code)
-            row = db.get_order(row["id"])
-            log.info("paypal-return c-path minted %s for order %s", code[:8] if code else "<empty>", row["id"])
-        except Exception as e:
-            log.exception("paypal-return c-path mint failed for order %s: %s", row.get("id"), e)
+    # v6.33: do NOT mint a redemption code on /paypal-return.
+    # The PayPal webhook (/paypal-webhook) handles fulfillment via the
+    # c-path "grant quota directly to user's New API account" flow
+    # (see _grant_quota_via_admin_api). Minting a code here too
+    # created a duplicate fulfillment path that emailed customers a
+    # redemption code they didn't need (the quota was already in their
+    # account). The /paypal-return page just shows "Payment received"
+    # and waits for the webhook to flip status to 'completed'.
     return HTMLResponse(
         f"""<!doctype html>
 <html><head><title>TokenMaster - Payment received</title>
