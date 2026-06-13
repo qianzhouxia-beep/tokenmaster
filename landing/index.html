@@ -960,10 +960,8 @@
                 const signedInAs = t('checkout.signed_in_as');
                 const needEmail = t('checkout.need_email');
                 const needEmailHint = t('checkout.need_email_hint');
-                const signinLink = t('checkout.signin_link');
                 const signupLink = t('checkout.signup_link');
                 const addEmailLink = t('checkout.add_email_link');
-                const checkAccount = t('checkout.check_account');
 
                 const overlay = document.createElement('div');
                 overlay.id = 'checkout-overlay';
@@ -981,13 +979,13 @@
                         <form id="checkout-form" style="display:none;flex-direction:column;gap:16px;">
                             <div id="checkout-session-row" style="display:none;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 12px;font-size:13px;color:#0c4a6e;">
                                 <span id="checkout-session-text"></span>
-                                <a id="checkout-switch-account" href="javascript:void(0)" style="margin-left:8px;color:#FF6B35;text-decoration:underline;font-size:12px;">${checkAccount}</a>
+                                <a id="checkout-switch-account" href="javascript:void(0)" style="display:none;margin-left:8px;color:#FF6B35;text-decoration:underline;font-size:12px;">${signedInAs}</a>
                             </div>
                             <div id="checkout-blocker" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:14px 16px;font-size:14px;color:#991b1b;">
                                 <div id="checkout-blocker-title" style="font-weight:600;margin-bottom:4px;"></div>
                                 <div id="checkout-blocker-hint" style="font-size:13px;color:#7f1d1d;margin-bottom:12px;"></div>
                                 <div id="checkout-blocker-actions" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
-                                <button id="checkout-refresh" type="button" style="margin-top:10px;background:white;border:1px solid #d1d5db;color:#374151;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">I'm done, check again</button>
+                                <div id="checkout-polling" style="display:none;margin-top:10px;font-size:12px;color:#7f1d1d;">Auto-checking...</div>
                             </div>
                             <label style="display:flex;flex-direction:column;gap:6px;">
                                 <span style="font-size:14px;font-weight:600;color:#333;">${emailLabel} <span style="color:#d44;">*</span></span>
@@ -1019,12 +1017,14 @@
                 const blockerTitle = document.getElementById('checkout-blocker-title');
                 const blockerHint = document.getElementById('checkout-blocker-hint');
                 const blockerActions = document.getElementById('checkout-blocker-actions');
-                const refreshBtn = document.getElementById('checkout-refresh');
+                const pollingEl = document.getElementById('checkout-polling');
                 const emailInput = formEl.querySelector('input[name=email]');
                 const submitBtn = document.getElementById('checkout-submit');
                 const errBox = document.getElementById('checkout-error');
 
                 let tmUser = null;  // current signed-in New API user (or null)
+                let pollTimer = null;  // polling handle for B / C states
+                const POLL_MS = 2000;   // re-check every 2s when blocked
 
                 function render(state) {
                     // state: 'loading' | 'A' | 'B' | 'C'
@@ -1035,6 +1035,13 @@
                     }
                     loadingEl.style.display = 'none';
                     formEl.style.display = 'flex';
+                    // v6.28.3: stop polling once we reach A (happy path)
+                    if (state === 'A') {
+                        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+                        pollingEl.style.display = 'none';
+                    } else {
+                        pollingEl.style.display = 'block';
+                    }
                     if (state === 'A' && tmUser) {
                         sessionRow.style.display = 'block';
                         sessionText.textContent = signedInAs + ' ' + (tmUser.username || '') + ' · ' + (tmUser.email || '');
@@ -1051,12 +1058,14 @@
                         blockerEl.style.display = 'block';
                         blockerTitle.textContent = needSignin;
                         blockerHint.textContent = needSigninHint;
+                        // v6.28.3: drop the "Sign in" link — the New API SPA
+                        // doesn't expose /login as a direct route (404), and
+                        // users always reach the login form from the homepage.
+                        // For a fresh checkout the only path that makes sense
+                        // is "Create account", which we keep.
                         blockerActions.innerHTML =
-                            '<a href="https://api-tokenmaster.com/login" target="_blank" rel="noopener noreferrer" ' +
+                            '<a href="https://api-tokenmaster.com/" target="_blank" rel="noopener noreferrer" ' +
                             'style="background:#FF6B35;color:white;text-decoration:none;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;">' +
-                            signinLink + '</a>' +
-                            '<a href="https://api-tokenmaster.com/register" target="_blank" rel="noopener noreferrer" ' +
-                            'style="background:white;border:1px solid #FF6B35;color:#FF6B35;text-decoration:none;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;">' +
                             signupLink + '</a>';
                         emailInput.value = '';
                         emailInput.readOnly = true;
@@ -1070,8 +1079,11 @@
                         blockerEl.style.display = 'block';
                         blockerTitle.textContent = needEmail;
                         blockerHint.textContent = needEmailHint;
+                        // v6.28.3: New API has no /profile route; the user
+                        // settings live under /console/personal. Send them
+                        // there to add an email.
                         blockerActions.innerHTML =
-                            '<a href="https://api-tokenmaster.com/profile" target="_blank" rel="noopener noreferrer" ' +
+                            '<a href="https://api-tokenmaster.com/console/personal" target="_blank" rel="noopener noreferrer" ' +
                             'style="background:#FF6B35;color:white;text-decoration:none;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;">' +
                             addEmailLink + '</a>';
                         emailInput.value = '';
@@ -1086,16 +1098,24 @@
                 async function checkSession() {
                     render('loading');
                     tmUser = await _tmFetchSelf();
-                    if (!tmUser) render('B');
-                    else if (!tmUser.email || !String(tmUser.email).trim()) render('C');
+                    if (!tmUser) { render('B'); startPolling(); }
+                    else if (!tmUser.email || !String(tmUser.email).trim()) { render('C'); startPolling(); }
                     else render('A');
                 }
 
-                switchLink.onclick = (e) => {
-                    e.preventDefault();
-                    _tmOpenLink('https://api-tokenmaster.com/logout');
-                };
-                refreshBtn.onclick = () => checkSession();
+                // v6.28.3: when the modal is open in B or C, poll /api/user/self
+                // every 2s so that the moment the user finishes signing up or
+                // adding an email in another tab, the modal flips to A without
+                // any "I'm done" click. Stops as soon as we hit A.
+                function startPolling() {
+                    if (pollTimer) return;
+                    pollTimer = setInterval(async () => {
+                        tmUser = await _tmFetchSelf();
+                        if (tmUser && tmUser.email && String(tmUser.email).trim()) {
+                            render('A');
+                        }
+                    }, POLL_MS);
+                }
 
                 formEl.onsubmit = async (e) => {
                     e.preventDefault();
