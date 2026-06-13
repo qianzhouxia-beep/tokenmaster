@@ -61,13 +61,13 @@ NEW_API_BASE_URL = os.environ.get("NEW_API_BASE_URL", "https://api-tokenmaster.c
 # missing or expired (HTTP 401), eliminating the 30-day manual rotation.
 _paypal_token = {"access_token": None, "expires_at":0}
 
-# v6.18: PayPal client timeout 3s. v6.17 set it to 5s; in production the
-# Zeabur → api-m.paypal.com round-trip + Cloudflare 502 early-bail on
-# ~3s boundary means anything > ~3s gets converted to 502 by the Cloudflare
-# proxy before our handler can return a real 5xx. 3s gives the upstream
-# two TCP retransmits worth of headroom and still fits inside the early-502
-# window so we control the failure mode.
-PAYPAL_TIMEOUT_S = 3
+# v6.37: PayPal client timeout 8s. v6.18 used 3s which was too tight —
+# PayPal sandbox can take 2-4s for OAuth + order creation, and network
+# jitter between Zeabur HK and PayPal US routinely pushes latency past
+# 3s, causing false timeouts and fallback redirects to the PayPal homepage
+# instead of the actual checkout page. 8s is well within the 30s Heroku/
+# Zeabur request timeout and gives PayPal enough headroom.
+PAYPAL_TIMEOUT_S = 8
 
 # v6.18: fallback payment_url returned by /create-order + /checkout/redirect
 # when the PayPal / NOWPayments call fails. Frontend can still navigate the
