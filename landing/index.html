@@ -663,6 +663,8 @@
                 'checkout.banner_pending': 'Payment in progress — finish in the new tab.',
                 'checkout.banner_paid': 'Payment received ✓ — check your email for the redemption code.',
                 'checkout.banner_failed': 'Payment failed or timed out. Contact billing@api-tokenmaster.com if you were charged.',
+                'checkout.popup_blocked': 'Popup was blocked by your browser.',
+                'checkout.open_paypal': 'Open PayPal →',
                 'site.modal_loading': 'Loading…',
                 'site.modal_error': 'Could not load this page. Please try again.',
                 'checkout.need_signin': 'Please sign in or create a free TokenMaster account first.',
@@ -786,6 +788,8 @@
                 'checkout.banner_pending': '支付进行中 — 请在新标签页完成支付。',
                 'checkout.banner_paid': '支付完成 ✓ — 请查收邮件获取兑换码。',
                 'checkout.banner_failed': '支付失败或超时。如果您已被扣款,请联系 billing@api-tokenmaster.com。',
+                'checkout.popup_blocked': '弹出窗口被浏览器拦截。',
+                'checkout.open_paypal': '打开 PayPal →',
                 'site.modal_loading': '正在加载...',
                 'site.modal_error': '加载失败,请重试。',
                 'checkout.need_signin': '请先登录或注册一个免费的 TokenMaster 账号。',
@@ -1305,10 +1309,40 @@
                         opened = !!w;
                     } catch (_) { opened = false; }
                     if (!opened) {
-                        // Fallback: same-tab navigation if popup blocked.
-                        // Still start polling so banner updates when paid.
-                        window.location.href = paymentUrl;
-                        return;
+                        // v6.31 fix: popup was blocked by the browser (common when window.open
+                        // is called inside an async fetch callback — Chrome treats it as
+                        // non-user-gesture). The old fallback was:
+                        //   window.location.href = paymentUrl
+                        // That navigated the IFRAME to PayPal. PayPal's checkoutnow page then
+                        // executed window.top.location which hijacked the parent (api-tokenmaster.com)
+                        // tab — exactly the "two PayPal pages" bug the user reported.
+                        //
+                        // Fix: instead of auto-navigating, update the banner to show a
+                        // manual "Open PayPal" button. When the USER clicks it, window.open
+                        // is triggered by a direct user gesture and the popup blocker lifts.
+                        // This keeps the iframe on our page and never lets PayPal run in the
+                        // iframe context where it could access window.top.
+                        const el = document.getElementById('tm-pay-banner');
+                        const textEl = document.getElementById('tm-pay-banner-text');
+                        const iconEl = document.getElementById('tm-pay-banner-icon');
+                        if (el && textEl && iconEl) {
+                            el.style.background = '#92400e';
+                            iconEl.textContent = '⚠';
+                            textEl.innerHTML = '';
+                            const msg = document.createTextNode(
+                                (typeof t === 'function' ? t('checkout.popup_blocked') : 'Popup blocked.') + ' '
+                            );
+                            textEl.appendChild(msg);
+                            const btn = document.createElement('a');
+                            btn.href = paymentUrl;
+                            btn.target = '_blank';
+                            btn.rel = 'noopener noreferrer';
+                            btn.textContent = typeof t === 'function' ? t('checkout.open_paypal') : 'Open PayPal →';
+                            btn.style.cssText = 'color:#fde68a;font-weight:600;text-decoration:underline;cursor:pointer;';
+                            textEl.appendChild(btn);
+                            el.style.display = 'block';
+                        }
+                        // Still start polling — if user clicks and pays, banner will update.
                     }
 
                     // Poll /orders/{id} every 1s, max 90s
@@ -1371,36 +1405,60 @@
             }
         })();
 
-// ============ v6.30: BREAK-OUT-OF-IFRAME BOOTSTRAP ============
-// Reality: New API's home iframe is a plain <iframe src=...> with NO
-// sandbox. PayPal's checkoutnow page runs `top.location = ...` (or
-// `window.top.location = ...`) and hijacks the *parent* New API tab,
-// turning it into a PayPal page in the SAME tab. The user's complaint
-// is: "I see TWO PayPal pages after I click Pay" — one in the new
-// tab we opened, one in the original api-tokenmaster.com tab.
+// ============ v6.31: BREAK-OUT-OF-IFRAME (CORRECTED) ============
+// v6.30 bug post-mortem:
+//   landing = pay.api-tokenmaster.com, parent = api-tokenmaster.com (CROSS-ORIGIN).
+//   Reading window.top.location.host throws SecurityError immediately.
+//   The catch block swallowed it silently → replace() NEVER ran → no-op.
 //
-// The fix is to make the landing page the *top-level document* before
-// any PayPal code ever runs. We do that by detecting "am I in an
-// iframe?" on first load and replacing the top window's URL with our
-// own. From then on, window.open() / <a target=_blank> / window.top
-// all refer to the SAME top frame, and PayPal's hijack attempt is
-// self-referential — it just reloads our own page, which is harmless.
+// v6.31 fix:
+//   Cross-origin iframe breakout via JS on page-load is browser-blocked.
+//   The one approach that actually works: add  allow-top-navigation  to the
+//   iframe's sandbox attribute in New API's home/index.tsx (see Task #2).
+//   As a belt-and-suspenders measure here, we also use the "framebusting via
+//   window.location href trick": navigate window.location (same-origin write,
+//   always allowed) to a URL served with  X-Frame-Options: DENY  so the
+//   browser itself refuses the embed and the top frame falls back.
+//   We implement that by adding ?breakout=1 which app.py intercepts and
+//   returns a 302 to the bare landing URL (top-level load).
 //
-// We use a per-page `?escaped=1` flag to avoid an infinite reload loop
-// if the rewrite somehow fails.
+//   BUT the cleanest single-file fix: in app.py, serve the /landing/ response
+//   with header  Content-Security-Policy: frame-ancestors 'self'  so only
+//   same-origin parents can embed it. api-tokenmaster.com ≠ pay.api-tokenmaster.com
+//   so the browser refuses to load it in the iframe entirely. New API home
+//   shows nothing (blank iframe) — which forces admin to set the Home Page URL
+//   to a top-level link instead. That's too destructive.
+//
+// FINAL v6.31 approach: belt-and-suspenders JS + HTTP header combination.
+//   JS: on every page load, if we detect we're in a cross-origin iframe
+//   (SecurityError on .top.location access), do nothing (JS can't break out).
+//   HTTP: app.py adds  X-Frame-Options: ALLOWALL  (allow embedding) but
+//   PayPal's sandbox.paypal.com checkoutnow pages attempt window.top.location.
+//   With iframe sandbox="allow-popups allow-popups-to-escape-sandbox" in
+//   New API's index.tsx, the PayPal new-tab popup is sandboxed to its own
+//   top-level context and cannot access the outer frame at all.
+//
+// This script's only job now: if we somehow ARE top-level with a stale
+// ?escaped=1 in the URL, clean it up for aesthetics.
 (function () {
-    try {
-        if (window.self === window.top) return;        // already top-level
-        if (window.top.location.host === window.location.host) return; // same origin parent, harmless
-        // Different-origin parent (typical: New API shell on api-tokenmaster.com
-        // embedding pay.api-tokenmaster.com). Break out.
-        var url = window.location.href;
-        if (url.indexOf('escaped=1') === -1) {
-            // Replace top frame. We use replace() (not href=) so the
-            // broken parent URL is not in the back-button history.
-            window.top.location.replace(url + (url.indexOf('?') >= 0 ? '&' : '?') + 'escaped=1');
-        }
-    } catch (_) { /* cross-origin access throws — that's the signal we wanted */ }
+    // Clean up ?escaped=1 from URL bar when already top-level (cosmetic).
+    if (window.self === window.top) {
+        try {
+            var url = new URL(window.location.href);
+            if (url.searchParams.has('escaped')) {
+                url.searchParams.delete('escaped');
+                window.history.replaceState(null, '', url.toString());
+            }
+        } catch (_) {}
+        return;
+    }
+    // We are in an iframe. The only thing that can fix this is the
+    // sandbox attribute on the <iframe> in New API's home/index.tsx.
+    // See: D:\AI\new-api-source\web\default\src\features\home\index.tsx
+    // Required change: add sandbox="allow-scripts allow-same-origin allow-forms
+    //   allow-popups allow-popups-to-escape-sandbox" to the <iframe> element.
+    // With that attribute set, PayPal's window.top.location in the popup tab
+    // is sandboxed to its own browsing context and cannot navigate our parent.
 })();
 
 // ============ LANG TOGGLE + INIT (v6.8) ============
