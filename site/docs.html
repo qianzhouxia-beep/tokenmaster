@@ -24,7 +24,7 @@ nav { max-width: 1200px; margin: 0 auto; padding: 16px 32px; display: flex; just
 .lang-toggle:hover { border-color: var(--primary); color: var(--primary); }
 .cta-btn { background: var(--primary-container); color: #fff; padding: 8px 20px; border-radius: 6px; font-family: "JetBrains Mono", monospace; font-size: 14px; font-weight: 500; text-decoration: none; transition: all 0.2s; }
 .cta-btn:hover { background: var(--primary); }
-main { flex: 1; max-width: 900px; margin: 0 auto; padding: 64px 32px; width: 100%; }
+main { flex: 1; max-width: 800px; margin: 0 auto; padding: 96px 32px 64px 32px; width: 100%; }
 h1 { font-family: "Space Grotesk", sans-serif; font-size: 48px; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 16px; }
 .lead { font-size: 20px; color: var(--secondary); margin-bottom: 48px; }
 h2 { font-family: "Space Grotesk", sans-serif; font-size: 32px; font-weight: 600; line-height: 1.2; margin: 48px 0 16px; }
@@ -261,13 +261,44 @@ function applyLang(lang) {
     if (lbl) lbl.textContent = lang === 'zh' ? '\u4e2d' : 'EN';
 }
 (function init() {
-    let saved = 'en';
-    try {
-        const stored = localStorage.getItem('tm_lang');
-        if (stored && (stored === 'en' || stored === 'zh')) saved = stored;
-        else if (navigator.language && navigator.language.toLowerCase().startsWith('zh')) saved = 'zh';
-    } catch (e) {}
+    // v6.28.8: the New API shell stores its language under one of
+    // these localStorage keys (i18nextLng / lng / locale / tm_lang).
+    // We read all of them and the most-recent 'zh' wins; otherwise
+    // we fall back to navigator language.
+    function readShellLang() {
+        try {
+            // New API shell (i18next) writes 'i18nextLng' / 'lng' / 'locale'.
+            // We (the landing) write 'tm_lang'. Whichever is set, wins.
+            const keys = ['i18nextLng', 'lng', 'locale', 'tm_lang'];
+            for (const k of keys) {
+                const v = localStorage.getItem(k);
+                if (!v) continue;
+                if (v.toLowerCase().startsWith('zh')) return 'zh';
+                if (v.toLowerCase().startsWith('en')) return 'en';
+            }
+            if (navigator.language && navigator.language.toLowerCase().startsWith('zh')) return 'zh';
+        } catch (e) {}
+        return 'en';
+    }
+    let saved = readShellLang();
     applyLang(saved);
+    // v6.28.8: listen for cross-tab 'storage' events so when the
+    // user switches language on the New API shell, our page follows.
+    // The event only fires on OTHER tabs/windows, not the writer; so
+    // we ALSO poll once per second to catch the same-tab case (when
+    // this page IS the New API shell's only tab, e.g. opened via
+    // window.open).  Polling is cheap (single localStorage read).
+    window.addEventListener('storage', (e) => {
+        if (!e.key) return;
+        if (e.key === 'i18nextLng' || e.key === 'lng' || e.key === 'locale' || e.key === 'tm_lang') {
+            applyLang(readShellLang());
+        }
+    });
+    setInterval(() => {
+        const cur = (document.documentElement.lang || 'en').startsWith('zh') ? 'zh' : 'en';
+        const want = readShellLang();
+        if (cur !== want) applyLang(want);
+    }, 1000);
     const toggle = document.getElementById('lang-toggle');
     if (toggle) toggle.addEventListener('click', e => {
         e.preventDefault();
