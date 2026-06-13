@@ -63,17 +63,25 @@ def init_db() -> None:
                 nowpayments_payment_id TEXT,
                 status TEXT NOT NULL DEFAULT 'pending',
                 redemption_code TEXT,
+                newapi_username TEXT,
                 created_at INTEGER NOT NULL,
                 completed_at INTEGER
             )
             """
         )
+        # v6.28: add newapi_username column to existing orders tables
+        # (was added to the CREATE TABLE in v6.28; for tables created by
+        # v6.27 and earlier, ALTER TABLE adds it idempotently).
+        cols = [row[1] for row in c.execute("PRAGMA table_info(orders)").fetchall()]
+        if "newapi_username" not in cols:
+            c.execute("ALTER TABLE orders ADD COLUMN newapi_username TEXT")
         c.execute("CREATE INDEX IF NOT EXISTS idx_orders_email ON orders(email)")
         c.execute("CREATE INDEX IF NOT EXISTS idx_orders_paypal ON orders(paypal_order_id)")
         c.execute("CREATE INDEX IF NOT EXISTS idx_orders_np ON orders(nowpayments_payment_id)")
+        c.execute("CREATE INDEX IF NOT EXISTS idx_orders_newapi_user ON orders(newapi_username)")
 
 
-def create_order(email, sku_id, payment_method, provider_order_id=None):
+def create_order(email, sku_id, payment_method, provider_order_id=None, newapi_username=None):
     sku = SKUS[sku_id]
     order_id = f"tm-{uuid.uuid4().hex[:12]}"
     now = int(time.time())
@@ -82,8 +90,8 @@ def create_order(email, sku_id, payment_method, provider_order_id=None):
             """
             INSERT INTO orders (id, email, sku_id, sku_label, usd_amount, quota,
             payment_method, paypal_order_id, nowpayments_payment_id,
-            status, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
+            newapi_username, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
             """,
             (
                 order_id,
@@ -95,6 +103,7 @@ def create_order(email, sku_id, payment_method, provider_order_id=None):
                 payment_method,
                 provider_order_id if payment_method == "paypal" else None,
                 provider_order_id if payment_method == "nowpayments" else None,
+                newapi_username,
                 now,
             ),
         )

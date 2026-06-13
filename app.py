@@ -168,6 +168,7 @@ class CreateOrderIn(BaseModel):
     email: EmailStr
     sku_id: str
     payment_method: str
+    newapi_username: str | None = None  # v6.28: New API username (when buyer is signed in)
 
 
 class CreateOrderOut(BaseModel):
@@ -300,7 +301,12 @@ def create_order(payload: CreateOrderIn) -> CreateOrderOut:
     if method not in ("paypal", "nowpayments"):
         raise HTTPException(400, "payment_method must be 'paypal' or 'nowpayments'")
 
-    temp_order = db.create_order(payload.email, payload.sku_id, method)
+    temp_order = db.create_order(
+        payload.email,
+        payload.sku_id,
+        method,
+        newapi_username=(payload.newapi_username or None),
+    )
 
     try:
         if method == "paypal":
@@ -353,7 +359,12 @@ def create_order(payload: CreateOrderIn) -> CreateOrderOut:
 # (CORS, sandboxed iframe, CSP, ad-blocker, etc.) — a plain form GET or
 # a window.location = url navigation always works, no preflight, no body.
 @app.get("/checkout/redirect")
-def checkout_redirect(sku_id: str, email: str, payment_method: str) -> "Response":
+def checkout_redirect(
+    sku_id: str,
+    email: str,
+    payment_method: str,
+    newapi_username: str = None,
+) -> "Response":
     from fastapi.responses import RedirectResponse  # local import keeps top tidy
 
     if sku_id not in db.SKUS:
@@ -365,7 +376,16 @@ def checkout_redirect(sku_id: str, email: str, payment_method: str) -> "Response
     if not email or "@" not in email:
         raise HTTPException(400, "valid email required")
 
-    temp_order = db.create_order(email, sku_id, method)
+    # v6.28: accept optional newapi_username from the session-aware modal
+    # (frontend already verified the user is signed in and has this email
+    # on file). We store it alongside the order so:
+    #   1. /orders/{id} can surface which New API account paid
+    #   2. c-path auto-mint can be tied to that user (future)
+    #   3. refund / support lookups can pivot on username
+    newapi_username = (newapi_username or "").strip() or None
+    if newapi_username and len(newapi_username) > 64:
+        raise HTTPException(400, "newapi_username too long")
+    temp_order = db.create_order(email, sku_id, method, newapi_username=newapi_username)
     try:
         if method == "paypal":
             pp_id, pp_url = _paypal_create_checkout(sku, email)

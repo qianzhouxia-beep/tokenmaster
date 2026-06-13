@@ -635,6 +635,15 @@
                 'checkout.error_prefix': 'Failed to create order:',
                 'checkout.error_no_url': 'No payment_url in response',
                 'checkout.footnote': 'Tokens are issued to your account instantly after payment. 14-day refund on unused tokens.',
+                'checkout.need_signin': 'Please sign in or create a free TokenMaster account first.',
+                'checkout.need_signin_hint': 'We need a verified account to deliver your tokens.',
+                'checkout.signed_in_as': 'Signed in as',
+                'checkout.need_email': 'Your account is missing an email. Add one to receive your redemption code.',
+                'checkout.need_email_hint': 'Tokens will be delivered to this email after payment.',
+                'checkout.signin_link': 'Sign in',
+                'checkout.signup_link': 'Create account',
+                'checkout.add_email_link': 'Add email to account',
+                'checkout.check_account': 'Account not yours? Switch account',
             },
             zh: {
                 'nav.features': '功能',
@@ -744,22 +753,17 @@
                 'checkout.error_prefix': '创建订单失败:',
                 'checkout.error_no_url': '响应中没有 payment_url',
                 'checkout.footnote': '支付完成后 tokens 立即到账。未使用的 tokens 支持 14 天无理由退款。',
-            }
-        };
-        if (typeof window !== 'undefined') window.I18N = I18N;
-
-        // ============ I18N APPLY ============
-        function applyLang(lang) {
-            const dict = I18N[lang] || I18N.en;
-            document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                        const key = el.getAttribute('data-i18n');
-                let val = dict[key];
-                if (val !== undefined) {
-                    // Decode unicode escape sequences (\\uXXXX) only if present
-                    if (/\\u[0-9a-fA-F]{4}/.test(val)) {
-                        try { val = JSON.parse('"' + val + '"'); } catch (e) {}
-                    }
+                'checkout.need_signin': '请先登录或注册一个免费的 TokenMaster 账号。',
+                'checkout.need_signin_hint': '我们需要一个已验证的账号来给您发放 tokens。',
+                'checkout.signed_in_as': '已登录身份',
+                'checkout.need_email': '您的账号还没有邮箱。请先添加邮箱,才能收到兑换码。',
+                'checkout.need_email_hint': '支付完成后 tokens 会发到这个邮箱。',
+                'checkout.signin_link': '登录',
+                'checkout.signup_link': '注册账号',
+                'checkout.add_email_link': '去添加邮箱',
+                'checkout.check_account': '不是您的账号? 切换账号',
+            },
+        }
                     if (/<[a-z][^>]*>/i.test(val)) {
                         el.innerHTML = val;
                     } else {
@@ -877,6 +881,44 @@
                 });
             });
 
+            // v6.28: Session-aware checkout modal. The iframe is loaded under
+            // api-tokenmaster.com/landing/ (Cloudflare Worker reverse-proxy) so
+            // fetch('/api/user/self') is same-origin → New API session cookie
+            // rides along automatically. Three branches:
+            //   A. signed in + has email → prefill, allow pay
+            //   B. signed out → block, show sign-in / sign-up links in new tab
+            //   C. signed in but email missing → block, show "add email" link
+            // On returning from sign-in / add-email, we re-query /api/user/self
+            // and the modal re-renders the right branch automatically.
+            async function _tmFetchSelf() {
+                try {
+                    const r = await fetch('/api/user/self', {
+                        credentials: 'same-origin',
+                        cache: 'no-store',
+                    });
+                    if (!r.ok) return null;
+                    const j = await r.json();
+                    return j && j.success ? (j.data || null) : null;
+                } catch (_) {
+                    return null;
+                }
+            }
+
+            function _tmOpenLink(url) {
+                // Open in new tab; from inside the New API iframe this escapes
+                // to a real browser tab. After the user finishes, they come
+                // back, hit "I'm done" and we re-query /api/user/self.
+                const a = document.createElement('a');
+                a.href = url;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                try { a.click(); } catch (_) {
+                    try { window.open(url, '_blank'); } catch (__) {}
+                }
+            }
+
             function openCheckoutModal(sku) {
                 const skuText = skuLabel(sku);
                 const skuUsd = skuPrice[sku] || 0;
@@ -887,11 +929,20 @@
                 const paypalOpt = t('checkout.method_paypal');
                 const npOpt = t('checkout.method_nowpayments');
                 const btnText = t('checkout.continue').replace('{usd}', String(skuUsd));
-                const submittingText = t('checkout.submitting');
                 const redirectingText = t('checkout.redirecting');
                 const errPrefix = t('checkout.error_prefix');
                 const errNoUrl = t('checkout.error_no_url');
                 const footnote = t('checkout.footnote');
+                const needSignin = t('checkout.need_signin');
+                const needSigninHint = t('checkout.need_signin_hint');
+                const signedInAs = t('checkout.signed_in_as');
+                const needEmail = t('checkout.need_email');
+                const needEmailHint = t('checkout.need_email_hint');
+                const signinLink = t('checkout.signin_link');
+                const signupLink = t('checkout.signup_link');
+                const addEmailLink = t('checkout.add_email_link');
+                const checkAccount = t('checkout.check_account');
+
                 const overlay = document.createElement('div');
                 overlay.id = 'checkout-overlay';
                 overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -904,7 +955,18 @@
                             </div>
                             <button id="checkout-close" type="button" aria-label="Close" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;padding:0;width:32px;height:32px;line-height:1;">×</button>
                         </div>
-                        <form id="checkout-form" style="display:flex;flex-direction:column;gap:16px;">
+                        <div id="checkout-loading" style="padding:24px 0;text-align:center;color:#666;font-size:14px;">Checking your account...</div>
+                        <form id="checkout-form" style="display:none;flex-direction:column;gap:16px;">
+                            <div id="checkout-session-row" style="display:none;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 12px;font-size:13px;color:#0c4a6e;">
+                                <span id="checkout-session-text"></span>
+                                <a id="checkout-switch-account" href="javascript:void(0)" style="margin-left:8px;color:#FF6B35;text-decoration:underline;font-size:12px;">${checkAccount}</a>
+                            </div>
+                            <div id="checkout-blocker" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:14px 16px;font-size:14px;color:#991b1b;">
+                                <div id="checkout-blocker-title" style="font-weight:600;margin-bottom:4px;"></div>
+                                <div id="checkout-blocker-hint" style="font-size:13px;color:#7f1d1d;margin-bottom:12px;"></div>
+                                <div id="checkout-blocker-actions" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+                                <button id="checkout-refresh" type="button" style="margin-top:10px;background:white;border:1px solid #d1d5db;color:#374151;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">I'm done, check again</button>
+                            </div>
                             <label style="display:flex;flex-direction:column;gap:6px;">
                                 <span style="font-size:14px;font-weight:600;color:#333;">${emailLabel} <span style="color:#d44;">*</span></span>
                                 <input type="email" name="email" required placeholder="${emailPh}" style="padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:15px;outline:none;" />
@@ -925,42 +987,112 @@
                 document.body.appendChild(overlay);
                 document.getElementById('checkout-close').onclick = () => overlay.remove();
                 overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
-                document.getElementById('checkout-form').onsubmit = async (e) => {
+
+                const loadingEl = document.getElementById('checkout-loading');
+                const formEl = document.getElementById('checkout-form');
+                const sessionRow = document.getElementById('checkout-session-row');
+                const sessionText = document.getElementById('checkout-session-text');
+                const switchLink = document.getElementById('checkout-switch-account');
+                const blockerEl = document.getElementById('checkout-blocker');
+                const blockerTitle = document.getElementById('checkout-blocker-title');
+                const blockerHint = document.getElementById('checkout-blocker-hint');
+                const blockerActions = document.getElementById('checkout-blocker-actions');
+                const refreshBtn = document.getElementById('checkout-refresh');
+                const emailInput = formEl.querySelector('input[name=email]');
+                const submitBtn = document.getElementById('checkout-submit');
+                const errBox = document.getElementById('checkout-error');
+
+                let tmUser = null;  // current signed-in New API user (or null)
+
+                function render(state) {
+                    // state: 'loading' | 'A' | 'B' | 'C'
+                    if (state === 'loading') {
+                        loadingEl.style.display = 'block';
+                        formEl.style.display = 'none';
+                        return;
+                    }
+                    loadingEl.style.display = 'none';
+                    formEl.style.display = 'flex';
+                    if (state === 'A' && tmUser) {
+                        sessionRow.style.display = 'block';
+                        sessionText.textContent = signedInAs + ' ' + (tmUser.username || '') + ' · ' + (tmUser.email || '');
+                        blockerEl.style.display = 'none';
+                        emailInput.value = tmUser.email || '';
+                        emailInput.readOnly = true;
+                        emailInput.style.background = '#f9fafb';
+                        emailInput.style.color = '#374151';
+                        submitBtn.disabled = false;
+                        submitBtn.style.opacity = '1';
+                        submitBtn.style.cursor = 'pointer';
+                    } else if (state === 'B') {
+                        sessionRow.style.display = 'none';
+                        blockerEl.style.display = 'block';
+                        blockerTitle.textContent = needSignin;
+                        blockerHint.textContent = needSigninHint;
+                        blockerActions.innerHTML =
+                            '<a href="https://api-tokenmaster.com/login" target="_blank" rel="noopener noreferrer" ' +
+                            'style="background:#FF6B35;color:white;text-decoration:none;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;">' +
+                            signinLink + '</a>' +
+                            '<a href="https://api-tokenmaster.com/register" target="_blank" rel="noopener noreferrer" ' +
+                            'style="background:white;border:1px solid #FF6B35;color:#FF6B35;text-decoration:none;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;">' +
+                            signupLink + '</a>';
+                        emailInput.value = '';
+                        emailInput.readOnly = true;
+                        emailInput.placeholder = needSigninHint;
+                        submitBtn.disabled = true;
+                        submitBtn.style.opacity = '0.5';
+                        submitBtn.style.cursor = 'not-allowed';
+                    } else if (state === 'C' && tmUser) {
+                        sessionRow.style.display = 'block';
+                        sessionText.textContent = signedInAs + ' ' + (tmUser.username || '');
+                        blockerEl.style.display = 'block';
+                        blockerTitle.textContent = needEmail;
+                        blockerHint.textContent = needEmailHint;
+                        blockerActions.innerHTML =
+                            '<a href="https://api-tokenmaster.com/profile" target="_blank" rel="noopener noreferrer" ' +
+                            'style="background:#FF6B35;color:white;text-decoration:none;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;">' +
+                            addEmailLink + '</a>';
+                        emailInput.value = '';
+                        emailInput.readOnly = true;
+                        emailInput.placeholder = needEmailHint;
+                        submitBtn.disabled = true;
+                        submitBtn.style.opacity = '0.5';
+                        submitBtn.style.cursor = 'not-allowed';
+                    }
+                }
+
+                async function checkSession() {
+                    render('loading');
+                    tmUser = await _tmFetchSelf();
+                    if (!tmUser) render('B');
+                    else if (!tmUser.email || !String(tmUser.email).trim()) render('C');
+                    else render('A');
+                }
+
+                switchLink.onclick = (e) => {
+                    e.preventDefault();
+                    _tmOpenLink('https://api-tokenmaster.com/logout');
+                };
+                refreshBtn.onclick = () => checkSession();
+
+                formEl.onsubmit = async (e) => {
                     e.preventDefault();
                     const form = e.target;
                     const email = form.email.value.trim();
                     const method = form.payment_method.value;
-                    const submit = document.getElementById('checkout-submit');
-                    const errBox = document.getElementById('checkout-error');
                     errBox.style.display = 'none';
-                    submit.disabled = true;
-                    submit.textContent = redirectingText;
-                    // v6.16: GET redirect — robust against CORS, sandboxed iframe,
-                    // CSP, ad-blocker. Server creates the order and 302-redirects
-                    // the iframe to PayPal/NOWPayments. No preflight, no JSON body.
-                    //
-                    // v6.22 / v6.23 / v6.24 attempts: top.location.href,
-                    // form.submit(target=_top), and <a target=_top> all
-                    // *escaped the iframe* but stayed in the same tab. The
-                    // user (qian) saw: "I clicked Pay in the New API page
-                    // and it replaced my New API tab with PayPal." That's
-                    // technically an escape, but the user expectation is:
-                    // PayPal opens in a NEW tab; the New API page stays
-                    // where it is.
-                    //
-                    // v6.26 FIX: use target="_blank" so the browser opens
-                    // PayPal in a brand-new tab. We disable the parent
-                    // page's referrer leak with rel="noopener noreferrer"
-                    // and use window.open(url, '_blank') as a programmatic
-                    // fallback (some browsers still block unrequested
-                    // popups from inside a sandboxed iframe, so we
-                    // synthesize a click on a real <a target=_blank>
-                    // first, which is the most permissive primitive).
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = redirectingText;
+                    // v6.26: target=_blank so PayPal opens in a new tab; the
+                    // New API tab stays where it is. v6.28 adds newapi_username
+                    // so the order can be cross-referenced with the New API
+                    // account that just paid (auditing + future auto-top-up).
                     const params = new URLSearchParams({
                         sku_id: sku,
                         email: email,
                         payment_method: method,
                     });
+                    if (tmUser && tmUser.username) params.set('newapi_username', tmUser.username);
                     const payUrl = 'https://pay.api-tokenmaster.com/checkout/redirect?' + params.toString();
                     const a = document.createElement('a');
                     a.href = payUrl;
@@ -969,24 +1101,16 @@
                     a.style.display = 'none';
                     document.body.appendChild(a);
                     let opened = false;
-                    try {
-                        a.click();
-                        opened = true;
-                    } catch (_) { opened = false; }
+                    try { a.click(); opened = true; } catch (_) { opened = false; }
                     if (!opened) {
                         try { const w = window.open(payUrl, '_blank'); opened = !!w; } catch (_) {}
                     }
                     if (!opened) {
-                        // Last resort: replace the iframe slot (better than
-                        // nothing if the browser blocks the new tab too).
-                        window.location.href = payUrl;
-                    }
-                    if (!clicked) {
-                        // Last resort: replace the iframe slot (best we can do
-                        // if both <a> and window.open are blocked).
                         window.location.href = payUrl;
                     }
                 };
+
+                checkSession();
             }
         })();
 
