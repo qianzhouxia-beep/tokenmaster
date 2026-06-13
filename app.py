@@ -212,6 +212,16 @@ def _paypal_create_checkout(sku, email):
             "brand_name": "TokenMaster",
             "shipping_preference": "NO_SHIPPING",
             "user_action": "PAY_NOW",
+            # v6.25: return_url + cancel_url are required for PayPal to
+            # know where to land the buyer AFTER the approval step. Without
+            # these, the browser sometimes drops the user on
+            # sandbox.paypal.com/home instead of the approve page, and the
+            # buyer (qian) sees "I logged in but where is the Approve
+            # button?". PayPal appends ?token=EC-XXXXX to return_url and
+            # we use it to capture the order. Cancel just bounces the
+            # buyer back to the landing page.
+            "return_url": "https://pay.api-tokenmaster.com/paypal-return",
+            "cancel_url": "https://pay.api-tokenmaster.com/paypal-cancel",
         },
     }
     r = requests.post(
@@ -230,6 +240,30 @@ def _paypal_create_checkout(sku, email):
     if not approve:
         raise HTTPException(502, f"PayPal approve link missing: {body}")
     return oid, approve
+
+
+def _paypal_capture_order(token: str):
+    """Capture (finalize) a PayPal order after the buyer approved.
+    Returns (paypal_order_id, capture_status) or (None, None) on failure.
+    v6.25: this is what /paypal-return calls so the buyer doesn't have
+    to click 'Continue' a second time after PayPal bounces them back."""
+    try:
+        access = _paypal_get_access_token()
+        r = requests.post(
+            f"{PAYPAL_API_BASE}/v2/checkout/orders/{token}/capture",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {access}",
+            },
+            json={},
+            timeout=PAYPAL_TIMEOUT_S,
+        )
+        r.raise_for_status()
+        body = r.json()
+        return body.get("id"), body.get("status")
+    except Exception as e:
+        log.exception("paypal capture failed: %s", e)
+        return None, None
 
 
 def _nowpayments_create_payment(sku, email, order_id):
@@ -361,6 +395,69 @@ def get_order(order_id: str) -> dict:
     if not row:
         raise HTTPException(404, f"order {order_id} not found")
     return row
+
+
+# ── v6.25: PayPal post-approval return + cancel ──────────────────────────
+# After the buyer approves on PayPal, PayPal appends ?token=EC-XXXXX to
+# return_url and redirects the browser here. We then capture the order
+# (server-side) so the buyer doesn't have to click a second time, and
+# render a tiny "processing payment…" page that polls /orders/{id} until
+# the webhook marks it paid and the buyer sees the redemption code.
+@app.get("/paypal-return")
+def paypal_return(token: str) -> HTMLResponse:
+    from fastapi.responses import HTMLResponse  # local import
+    pp_id, _ = _paypal_capture_order(token)
+    row = db.find_by_paypal(pp_id) if pp_id else None
+    if not row:
+        return HTMLResponse(
+            "<h1>Order pending</h1>"
+            "<p>We could not match your PayPal approval to a TokenMaster order. "
+            "If you were charged, please contact billing@api-tokenmaster.com.</p>",
+            status_code=200,
+        )
+    return HTMLResponse(
+        f"""<!doctype html>
+<html><head><title>TokenMaster - Payment received</title>
+<meta charset='utf-8'>
+<style>body{{font-family:system-ui;max-width:560px;margin:48px auto;padding:0 16px;}}</style>
+</head><body>
+<h1>Payment received ✓</h1>
+<p>Your redemption code is being emailed to you. This page will update when the code is ready.</p>
+<p>Order id: <code>{row['id']}</code></p>
+<div id="status">Checking payment status…</div>
+<script>
+async function poll() {{
+  for (let i = 0; i < 60; i++) {{
+    const r = await fetch('/orders/{row['id']}');
+    if (r.ok) {{
+      const o = await r.json();
+      if (o.status === 'paid') {{
+        document.getElementById('status').innerHTML =
+          'Paid ✓. Code: <code>' + (o.redeem_code || '(check email)') + '</code>';
+        return;
+      }}
+    }}
+    await new Promise(r => setTimeout(r, 2000));
+  }}
+  document.getElementById('status').textContent =
+    'Still waiting for webhook. If you were charged, your code will arrive by email.';
+}}
+poll();
+</script>
+</body></html>""",
+        status_code=200,
+    )
+
+
+@app.get("/paypal-cancel")
+def paypal_cancel() -> HTMLResponse:
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(
+        "<h1>Payment cancelled</h1>"
+        "<p>You can <a href='https://api-tokenmaster.com/landing/'>go back to TokenMaster</a> "
+        "and try again any time.</p>",
+        status_code=200,
+    )
 
 
 # ── PayPal signature verification (no SDK, no Java) ──────────────────────
