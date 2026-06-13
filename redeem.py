@@ -31,6 +31,10 @@ v6 (SendGrid) and v5 just prints `[MOCK EMAIL]` to the log.
 from __future__ import annotations
 
 import logging
+import os
+import smtplib
+import ssl
+from email.message import EmailMessage
 
 import requests
 
@@ -40,14 +44,20 @@ log = logging.getLogger("tokenmaster.redeem")
 
 NEW_API_BASE_URL = newapi_auth.NEW_API_BASE_URL
 
-# USD price -> New API quota (1 quota = 0.001 USD, per v5 spec line 68).
-# Keys are STRINGS so callers can pass `order["usd_amount"]` directly
-# (`str(int)`) without a separate mapping table in app.py.
+# SKU_ID -> New API quota. 1 quota = 0.001 USD, per v5 spec line 68.
+# Keys are SKU_IDs (not USD amount) so the order row's `sku_id` field
+# is the single source of truth and we never mismatch price to quota.
+# Mirrors db.SKUS; keep these two in sync.
 QUOTA_MAP: dict[str, int] = {
-    "10": 100_000,
-    "30": 300_000,
-    "100": 1_000_000,
-    "300": 3_000_000,
+    # legacy 4 tiers
+    "starter":   100_000,
+    "indie":     300_000,
+    "team":      1_000_000,
+    "pro":       3_000_000,
+    # v6 3 tiers (15/35/80 USD)
+    "starter_v6": 20_000_000,
+    "indie_v6":   50_000_000,
+    "team_v6":    150_000_000,
 }
 
 
@@ -138,14 +148,75 @@ def create_redemption(sku: str, email: str) -> str:
             f"New API 2xx but no usable code in body: {body!r}"
         )
 
-    # Mock email send — v6 will replace this with SendGrid SMTP.
-    log.info(
-        "[MOCK EMAIL] to=%s subject='Your TokenMaster code' body='Redeem at "
-        "https://%s/wallet with code %s'",
-        email, NEW_API_BASE_URL.replace("https://", "").replace("http://", ""), code,
-    )
-    log.info("email sent (mock): code=%s*** to=%s sku=$%s", code[:8], email, sku)
+    # v6.19: real email send. Falls back to log-only mock if SMTP env
+    # not configured (so dev / CI can still run without email creds).
+    _send_code_email(email, sku, code)
     return code
+
+
+def _send_code_email(email: str, sku: str, code: str) -> None:
+    """Send the redemption code to the customer.
+
+    SMTP env (all optional; missing = log-only fallback):
+        SMTP_HOST      e.g. smtp.sendgrid.net
+        SMTP_PORT      587 (default) or 465
+        SMTP_USERNAME  e.g. apikey
+        SMTP_PASSWORD  e.g. SG.xxxxx
+        SMTP_FROM      e.g. "TokenMaster <noreply@api-tokenmaster.com>"
+        SMTP_USE_TLS   "1" (default STARTTLS on port 587)
+    """
+    host = os.environ.get("SMTP_HOST", "").strip()
+    user = os.environ.get("SMTP_USERNAME", "").strip()
+    password = os.environ.get("SMTP_PASSWORD", "").strip()
+    sender = os.environ.get("SMTP_FROM", "noreply@api-tokenmaster.com").strip()
+    wallet_host = NEW_API_BASE_URL.replace("https://", "").replace("http://", "")
+
+    if not (host and user and password):
+        log.info(
+            "[EMAIL MOCK] SMTP not configured; would have sent to=%s code=%s*** sku=$%s "
+            "(set SMTP_HOST/SMTP_USERNAME/SMTP_PASSWORD to enable real send)",
+            email, code[:8], sku,
+        )
+        return
+
+    port = int(os.environ.get("SMTP_PORT", "587"))
+    use_tls = os.environ.get("SMTP_USE_TLS", "1") != "0"
+
+    msg = EmailMessage()
+    msg["Subject"] = f"Your TokenMaster code (${sku} topup)"
+    msg["From"] = sender
+    msg["To"] = email
+    msg.set_content(
+        f"Thanks for your TokenMaster purchase!\n\n"
+        f"Plan: ${sku} topup\n"
+        f"Redemption code: {code}\n\n"
+        f"Redeem at https://{wallet_host}/wallet (Settings → Redeem).\n"
+        f"The code grants the full quota to your account instantly.\n\n"
+        f"Questions? Reply to this email.\n"
+    )
+
+    try:
+        if port == 465:
+            # SSL
+            ctx = ssl.create_default_context()
+            with smtplib.SMTP_SSL(host, port, timeout=10, context=ctx) as s:
+                s.login(user, password)
+                s.send_message(msg)
+        else:
+            # STARTTLS (default)
+            with smtplib.SMTP(host, port, timeout=10) as s:
+                s.ehlo()
+                if use_tls:
+                    s.starttls(context=ssl.create_default_context())
+                    s.ehlo()
+                s.login(user, password)
+                s.send_message(msg)
+        log.info("email sent: to=%s code=%s*** sku=$%s", email, code[:8], sku)
+    except Exception as e:
+        # Don't fail the whole redemption just because email failed. The
+        # code is already minted and saved in DB; the operator can re-send
+        # manually from the orders table.
+        log.error("email send FAILED for to=%s code=%s: %s", email, code[:8], e)
 
 
 if __name__ == "__main__":

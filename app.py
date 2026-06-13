@@ -521,23 +521,26 @@ async def nowpayments_webhook(
 def _mint_redemption_code(order: dict) -> str:
     """Mint a New API redemption code for the order's SKU.
 
-    Thin adapter that maps the `order` row to `(sku, email)` for the
-    `redeem.create_redemption` contract. On `SessionExpiredError` we fall
-    back to a TM-FALLBACK placeholder so the order can still complete its
-    DB lifecycle; the verifier flags this in the deliverable Notes
-    section. Any other error is re-raised so callers can decide.
+    Thin adapter that maps the `order` row to `(sku_id, email)` for the
+    `redeem.create_redemption` contract. On `SessionExpiredError` or
+    `ValueError` (unknown SKU) we fall back to a TM-FALLBACK placeholder
+    so the order can still complete its DB lifecycle; the operator must
+    then refresh the session / re-code the order manually. Any other
+    error is re-raised so callers can decide.
     """
-    sku = str(order["usd_amount"])
+    # v6.19: use sku_id (e.g. "starter_v6") rather than usd_amount. The old
+    # mapping passed `str(usd_amount)` which doesn't match the new 6-tier
+    # QUOTA_MAP keyed by sku_id; every v6 order was falling into the
+    # TM-FALLBACK bucket and the user got nothing.
+    sku_id = order.get("sku_id") or str(order.get("usd_amount", ""))
     email = order["email"]
     try:
-        return redeem.create_redemption(sku, email)
+        return redeem.create_redemption(sku_id, email)
     except redeem.SessionExpiredError as e:
         log.error(
-            "New API session expired while coding order %s sku=$%s: %s",
-            order["id"], sku, e,
+            "New API session expired while coding order %s sku_id=%s: %s",
+            order["id"], sku_id, e,
         )
-        # Fallback: the order still completes; operator must refresh
-        # NEW_API_SESSION_COOKIE and retroactively code the order.
         return f"TM-FALLBACK-{uuid.uuid4().hex[:10].upper()}"
     except ValueError as e:
         log.error("Bad SKU on order %s: %s", order["id"], e)
