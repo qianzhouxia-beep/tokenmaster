@@ -954,6 +954,30 @@ def balance_polling(user_id: int) -> dict:
         raise HTTPException(500, f"balance lookup failed: {type(e).__name__}: {e}")
 
 
+# ── TEMPORARY DEBUG: query PayPal order details ───────────────────────
+# REMOVE AFTER TROUBLESHOOTING $0.25 issue
+
+@app.get("/_debug/paypal-order/{pp_id}")
+def debug_paypal_order(pp_id: str):
+    token = _paypal_get_access_token()
+    r = requests.get(
+        f"{PAYPAL_API_BASE}/v2/checkout/orders/{pp_id}",
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=PAYPAL_TIMEOUT_S,
+    )
+    r.raise_for_status()
+    body = r.json()
+    pu = body.get("purchase_units", [{}])[0]
+    amt = pu.get("amount", {})
+    return {
+        "pp_id": pp_id,
+        "status": body.get("status"),
+        "intent": body.get("intent"),
+        "amount": amt,
+        "payee": body.get("payment_source", {}).get("paypal", {}).get("email_address", "?"),
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app:app", host="0.0.0.0", port=int(os.environ.get("PORT",8000)))
