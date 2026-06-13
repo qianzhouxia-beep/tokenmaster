@@ -528,12 +528,27 @@
 </div>
 </div>
 </footer>
-    <!-- v6.28.6: payment-in-progress banner. Hidden by default; the
-         modal submit handler shows it after creating the order and
-         turns it green once /orders/{id} reports status=completed. -->
-    <div id="tm-pay-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:10000;padding:14px 20px;background:#0c4a6e;color:white;text-align:center;font-size:14px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,0.15);cursor:pointer;">
-        <span id="tm-pay-banner-icon" style="margin-right:8px;">⏳</span>
-        <span id="tm-pay-banner-text">Payment in progress — finish in the new tab.</span>
+    <!-- v6.29: payment guide. v6.28.6 used window.open() + 1s polling,
+         but several browsers / New API shell iframe configurations
+         were hijacking the parent frame to PayPal (the page itself
+         got replaced, not just a new tab). v6.29 switches to a
+         "two-step" UX: after order creation we DO NOT auto-open
+         PayPal; we show a guide bar with a button the user has to
+         click to open PayPal. The user stays in control of when
+         the new tab opens. Background polling still runs. -->
+    <div id="tm-pay-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:10000;padding:14px 20px;background:#0c4a6e;color:white;box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+        <div style="max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+            <span id="tm-pay-banner-icon" style="font-size:18px;">⏳</span>
+            <span id="tm-pay-banner-text" style="flex:1 1 auto;font-size:14px;font-weight:500;">Payment in progress.</span>
+            <a id="tm-pay-banner-open" href="javascript:void(0)" target="_blank" rel="noopener noreferrer"
+               style="display:none;background:#fff;color:#0c4a6e;padding:8px 16px;border-radius:6px;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;">
+                Open PayPal →
+            </a>
+            <button id="tm-pay-banner-cancel" type="button"
+                    style="background:transparent;border:1px solid rgba(255,255,255,0.4);color:white;padding:6px 12px;border-radius:6px;font-size:13px;cursor:pointer;">
+                Dismiss
+            </button>
+        </div>
     </div>
     <!-- v6.28.9: site-page modal. Footer "Docs / Models / About /
          Contact / Privacy / Terms" links no longer navigate to a
@@ -660,9 +675,12 @@
                 'checkout.error_prefix': 'Failed to create order:',
                 'checkout.error_no_url': 'No payment_url in response',
                 'checkout.footnote': 'Tokens are issued to your account instantly after payment. 14-day refund on unused tokens.',
-                'checkout.banner_pending': 'Payment in progress — finish in the new tab.',
+                'checkout.banner_pending': 'Order placed. Click "Open PayPal" below to pay in a new tab.',
                 'checkout.banner_paid': 'Payment received ✓ — check your email for the redemption code.',
                 'checkout.banner_failed': 'Payment failed or timed out. Contact billing@api-tokenmaster.com if you were charged.',
+                'checkout.banner_open': 'Open PayPal →',
+                'checkout.banner_dismiss': 'Dismiss',
+                'checkout.banner_close': 'Close',
                 'site.modal_loading': 'Loading…',
                 'site.modal_error': 'Could not load this page. Please try again.',
                 'checkout.need_signin': 'Please sign in or create a free TokenMaster account first.',
@@ -783,9 +801,12 @@
                 'checkout.error_prefix': '创建订单失败:',
                 'checkout.error_no_url': '响应中没有 payment_url',
                 'checkout.footnote': '支付完成后 tokens 立即到账。未使用的 tokens 支持 14 天无理由退款。',
-                'checkout.banner_pending': '支付进行中 — 请在新标签页完成支付。',
+                'checkout.banner_pending': '订单已创建。点击下方"打开 PayPal"在新标签页完成支付。',
                 'checkout.banner_paid': '支付完成 ✓ — 请查收邮件获取兑换码。',
                 'checkout.banner_failed': '支付失败或超时。如果您已被扣款,请联系 billing@api-tokenmaster.com。',
+                'checkout.banner_open': '打开 PayPal →',
+                'checkout.banner_dismiss': '关闭',
+                'checkout.banner_close': '关闭',
                 'site.modal_loading': '正在加载...',
                 'site.modal_error': '加载失败,请重试。',
                 'checkout.need_signin': '请先登录或注册一个免费的 TokenMaster 账号。',
@@ -1295,23 +1316,26 @@
                         return;
                     }
 
-                    // Close modal, show banner, open new tab
+                    // v6.29: close modal, show banner with the open-PayPal
+                    // button. We DO NOT auto-window.open() here:
+                    //   - in some browsers + iframe configurations, the
+                    //     popup got hijacked and the parent frame ended
+                    //     up navigating to PayPal (replacing the landing
+                    //     page), which is what the user is reporting now.
+                    //   - by giving the user a button to click, the
+                    //     browser uses the regular <a target=_blank>
+                    //     path, which has the strongest "open in new tab"
+                    //     semantics (and respects popup blockers gracefully).
+                    // Background 1s polling still runs to flip the
+                    // banner green once the webhook marks the order
+                    // paid.
                     overlay.remove();
-                    showPaymentBanner('pending', orderId);
+                    showPaymentBanner('pending', orderId, paymentUrl);
 
-                    let opened = false;
-                    try {
-                        const w = window.open(paymentUrl, '_blank', 'noopener,noreferrer');
-                        opened = !!w;
-                    } catch (_) { opened = false; }
-                    if (!opened) {
-                        // Fallback: same-tab navigation if popup blocked.
-                        // Still start polling so banner updates when paid.
-                        window.location.href = paymentUrl;
-                        return;
-                    }
-
-                    // Poll /orders/{id} every 1s, max 90s
+                    // Poll /orders/{id} every 1s, max 90s. Stash the
+                    // handle on the banner element so the cancel
+                    // button (rendered inside showPaymentBanner) can
+                    // clearInterval when the user dismisses.
                     const POLL_INTERVAL_MS = 1000;
                     const POLL_MAX_MS = 90000;
                     const t0 = Date.now();
@@ -1338,15 +1362,24 @@
                             }
                         } catch (_) { /* keep polling on transient errors */ }
                     }, POLL_INTERVAL_MS);
+                    // Stash the timer handle on the banner element so
+                    // the Dismiss button (wired in showPaymentBanner)
+                    // can clearInterval when the user closes it.
+                    document.getElementById('tm-pay-banner')._pollTimer = pollTimer;
                 };
 
-                // v6.28.6: top-of-page banner replacing the old modal
-                // "Redirecting..." deadlock. The user can click it to
-                // re-focus the payment tab if they closed it.
-                function showPaymentBanner(state, orderId) {
+                // v6.29: top-of-page banner with manual "Open PayPal"
+                // button. We replaced the v6.28.6 window.open() call
+                // because some browser + New API shell iframe
+                // configurations hijacked the parent frame instead
+                // of opening a new tab. The user now clicks a real
+                // <a target=_blank> button to open PayPal themselves.
+                function showPaymentBanner(state, orderId, paymentUrl) {
                     const el = document.getElementById('tm-pay-banner');
                     const iconEl = document.getElementById('tm-pay-banner-icon');
                     const textEl = document.getElementById('tm-pay-banner-text');
+                    const openBtn = document.getElementById('tm-pay-banner-open');
+                    const cancelBtn = document.getElementById('tm-pay-banner-cancel');
                     if (!el) return;
                     const textMap = {
                         pending: t('checkout.banner_pending'),
@@ -1357,14 +1390,41 @@
                     if (state === 'paid') {
                         el.style.background = '#166534';
                         iconEl.textContent = '✓';
+                        if (openBtn) openBtn.style.display = 'none';
+                        if (cancelBtn) cancelBtn.textContent = t('checkout.banner_close');
                     } else if (state === 'failed') {
                         el.style.background = '#991b1b';
                         iconEl.textContent = '✕';
+                        if (openBtn) openBtn.style.display = 'none';
+                        if (cancelBtn) cancelBtn.textContent = t('checkout.banner_close');
                     } else {
+                        // pending
                         el.style.background = '#0c4a6e';
                         iconEl.textContent = '⏳';
+                        if (openBtn) {
+                            openBtn.style.display = '';
+                            // v6.29: hand the payment URL to a regular anchor
+                            // with target=_blank. The user clicks the
+                            // button; the browser opens PayPal in a NEW
+                            // tab via the anchor's native semantics,
+                            // which can't be hijacked into replacing
+                            // the parent frame.
+                            if (paymentUrl) {
+                                openBtn.href = paymentUrl;
+                                openBtn.onclick = null;  // let the <a target=_blank> handle it
+                            }
+                        }
+                        if (cancelBtn) cancelBtn.textContent = t('checkout.banner_dismiss');
                     }
                     el.style.display = 'block';
+                    // wire the dismiss button (idempotent)
+                    if (cancelBtn && !cancelBtn._wired) {
+                        cancelBtn._wired = true;
+                        cancelBtn.addEventListener('click', () => {
+                            el.style.display = 'none';
+                            if (el._pollTimer) { clearInterval(el._pollTimer); el._pollTimer = null; }
+                        });
+                    }
                 }
 
                 checkSession();
