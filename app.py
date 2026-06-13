@@ -164,6 +164,24 @@ def health() -> dict:
     return {"status": "ok", "version": "v5"}
 
 
+# v6.28.5: serve the TokenMaster brand logo as /favicon.ico so the browser
+# tab + bookmark + address-bar icon shows the brand instead of New API's
+# default one. We re-use assets/logo.png (PNG body, content-type declared as
+# image/x-icon — browsers accept PNG bytes for favicons when served with
+# an .ico name).
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    from fastapi.responses import FileResponse
+    logo_path = pathlib.Path(__file__).parent / "assets" / "logo.png"
+    if not logo_path.is_file():
+        raise HTTPException(404, "logo not found")
+    return FileResponse(
+        path=str(logo_path),
+        media_type="image/x-icon",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
 class CreateOrderIn(BaseModel):
     email: EmailStr
     sku_id: str
