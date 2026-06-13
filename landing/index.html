@@ -896,12 +896,31 @@
                     // v6.16: GET redirect — robust against CORS, sandboxed iframe,
                     // CSP, ad-blocker. Server creates the order and 302-redirects
                     // the iframe to PayPal/NOWPayments. No preflight, no JSON body.
+                    //
+                    // v6.22 FIX: PayPal sets `frame-ancestors 'self' https://*.paypal.com`
+                    // which means a 302 into PayPal inside an iframe always fails
+                    // (the user sees "Refused to connect"). Detect iframe context and
+                    // escape to the top window with `top.location.href` so the user
+                    // lands on a full PayPal tab instead of a dead iframe page.
                     const params = new URLSearchParams({
                         sku_id: sku,
                         email: email,
                         payment_method: method,
                     });
-                    window.location.href = 'https://pay.api-tokenmaster.com/checkout/redirect?' + params.toString();
+                    const payUrl = 'https://pay.api-tokenmaster.com/checkout/redirect?' + params.toString();
+                    try {
+                        if (window.top && window.top !== window.self) {
+                            // We're inside an iframe — break out so the 302 lands
+                            // in a real top-level tab. PayPal refuses to be framed.
+                            window.top.location.href = payUrl;
+                        } else {
+                            window.location.href = payUrl;
+                        }
+                    } catch (_) {
+                        // Cross-origin top (e.g. browser blocks reading top.location
+                        // when we have no relation). Fall back to a direct nav.
+                        window.location.href = payUrl;
+                    }
                 };
             }
         })();
