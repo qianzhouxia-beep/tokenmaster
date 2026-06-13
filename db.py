@@ -168,6 +168,15 @@ def attach_provider_id(order_id, payment_method, provider_order_id):
     return get_order(order_id)
 
 
+def list_recent_orders(limit=20):
+    with _conn() as c:
+        rows = c.execute(
+            "SELECT * FROM orders ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
 if __name__ == "__main__":
     init_db()
     print(f"DB ready at {DB_PATH}")

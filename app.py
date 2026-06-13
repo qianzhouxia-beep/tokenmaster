@@ -978,6 +978,25 @@ def debug_paypal_order(pp_id: str):
     }
 
 
+@app.get("/_debug/recent-orders")
+def debug_recent_orders(limit: int = 20):
+    rows = db.list_recent_orders(limit)
+    return [
+        {
+            "id": r["id"],
+            "email": r["email"],
+            "sku_id": r["sku_id"],
+            "sku_label": r["sku_label"],
+            "usd_amount": r["usd_amount"],
+            "payment_method": r["payment_method"],
+            "paypal_order_id": r["paypal_order_id"],
+            "status": r["status"],
+            "created_at": r["created_at"],
+        }
+        for r in rows
+    ]
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app:app", host="0.0.0.0", port=int(os.environ.get("PORT",8000)))
