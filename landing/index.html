@@ -475,30 +475,30 @@
                         <ul class="space-y-sm text-secondary font-body-md">
                             <li class=""><a class="hover:text-primary" href="#features" data-i18n="nav.features">Features</a></li>
                             <li class=""><a class="hover:text-primary" href="#pricing" data-i18n="nav.pricing">Pricing</a></li>
-                            <li class=""><a class="hover:text-primary" href="https://pay.api-tokenmaster.com/site/models.html" data-i18n="footer.models">Models</a></li>
+                            <li class=""><a class="hover:text-primary tm-modal-link" href="https://pay.api-tokenmaster.com/site/models.html" data-i18n="footer.models">Models</a></li>
                         </ul>
                     </div>
                     <div class="space-y-md">
                         <h4 class="font-label-md text-on-surface font-bold uppercase tracking-wider" data-i18n="footer.resources">Resources</h4>
                         <ul class="space-y-sm text-secondary font-body-md">
-                            <li class=""><a class="hover:text-primary" href="https://pay.api-tokenmaster.com/site/docs.html" data-i18n="footer.docs">Documentation</a></li>
-                            <li class=""><a class="hover:text-primary" href="https://pay.api-tokenmaster.com/site/docs-api.html" data-i18n="footer.apiref">API Ref</a></li>
+                            <li class=""><a class="hover:text-primary tm-modal-link" href="https://pay.api-tokenmaster.com/site/docs.html" data-i18n="footer.docs">Documentation</a></li>
+                            <li class=""><a class="hover:text-primary tm-modal-link" href="https://pay.api-tokenmaster.com/site/docs-api.html" data-i18n="footer.apiref">API Ref</a></li>
                             <li class=""><a class="hover:text-primary" href="#faq" data-i18n="nav.faq">FAQ</a></li>
                         </ul>
                     </div>
                     <div class="space-y-md">
                         <h4 class="font-label-md text-on-surface font-bold uppercase tracking-wider" data-i18n="footer.company">Company</h4>
                         <ul class="space-y-sm text-secondary font-body-md">
-                            <li class=""><a class="hover:text-primary" href="https://pay.api-tokenmaster.com/site/about.html" data-i18n="footer.about">About</a></li>
-                            <li class=""><a class="hover:text-primary" href="https://pay.api-tokenmaster.com/site/contact.html" data-i18n="footer.contact">Contact</a></li>
+                            <li class=""><a class="hover:text-primary tm-modal-link" href="https://pay.api-tokenmaster.com/site/about.html" data-i18n="footer.about">About</a></li>
+                            <li class=""><a class="hover:text-primary tm-modal-link" href="https://pay.api-tokenmaster.com/site/contact.html" data-i18n="footer.contact">Contact</a></li>
                             <li class=""><a class="text-on-surface-variant opacity-50 cursor-not-allowed" href="javascript:void(0)" title="Blog coming soon" data-i18n="footer.blog">Blog</a></li>
                         </ul>
                     </div>
                     <div class="space-y-md">
                         <h4 class="font-label-md text-on-surface font-bold uppercase tracking-wider" data-i18n="footer.legal">Legal</h4>
                         <ul class="space-y-sm text-secondary font-body-md">
-                            <li class=""><a class="hover:text-primary" href="https://pay.api-tokenmaster.com/site/privacy.html" data-i18n="footer.privacy">Privacy</a></li>
-                            <li class=""><a class="hover:text-primary" href="https://pay.api-tokenmaster.com/site/terms.html" data-i18n="footer.terms">Terms</a></li>
+                            <li class=""><a class="hover:text-primary tm-modal-link" href="https://pay.api-tokenmaster.com/site/privacy.html" data-i18n="footer.privacy">Privacy</a></li>
+                            <li class=""><a class="hover:text-primary tm-modal-link" href="https://pay.api-tokenmaster.com/site/terms.html" data-i18n="footer.terms">Terms</a></li>
                             <li class=""><a class="text-on-surface-variant opacity-50 cursor-not-allowed" href="javascript:void(0)" title="Status page coming soon" data-i18n="footer.status">Status</a></li>
                         </ul>
                     </div>
@@ -517,8 +517,8 @@
 </div>
 <div class="border-t border-outline-variant pt-lg flex flex-col md:row justify-between items-center gap-md">
 <div class="flex items-center gap-lg text-secondary font-label-sm">
-<a class="hover:text-primary" href="https://pay.api-tokenmaster.com/site/privacy.html" data-i18n="footer.privacy">Privacy Policy</a>
-                    <a class="hover:text-primary" href="https://pay.api-tokenmaster.com/site/terms.html" data-i18n="footer.terms">Terms of Service</a>
+<a class="hover:text-primary tm-modal-link" href="https://pay.api-tokenmaster.com/site/privacy.html" data-i18n="footer.privacy">Privacy Policy</a>
+                    <a class="hover:text-primary tm-modal-link" href="https://pay.api-tokenmaster.com/site/terms.html" data-i18n="footer.terms">Terms of Service</a>
 <a class="hover:text-primary" href="javascript:void(0)" onclick="localStorage.removeItem('tm_lang'); location.reload();" data-i18n="footer.cookie">Cookie Settings</a>
 </div>
 <div class="flex items-center gap-sm text-secondary font-label-sm">
@@ -534,6 +534,20 @@
     <div id="tm-pay-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:10000;padding:14px 20px;background:#0c4a6e;color:white;text-align:center;font-size:14px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,0.15);cursor:pointer;">
         <span id="tm-pay-banner-icon" style="margin-right:8px;">⏳</span>
         <span id="tm-pay-banner-text">Payment in progress — finish in the new tab.</span>
+    </div>
+    <!-- v6.28.9: site-page modal. Footer "Docs / Models / About /
+         Contact / Privacy / Terms" links no longer navigate to a
+         new tab. They open this modal and load the page body via
+         fetch + <iframe srcdoc>, so the user stays in the New
+         API shell (with its own top nav + footer intact) and the
+         modal content is its own scrollable region. -->
+    <div id="tm-site-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:10001;align-items:flex-start;justify-content:center;padding:48px 20px 20px;overflow-y:auto;">
+        <div style="background:#fff8f6;border-radius:16px;max-width:900px;width:100%;position:relative;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
+            <button id="tm-site-modal-close" type="button" aria-label="Close" style="position:absolute;top:12px;right:12px;background:#fff;border:1px solid #e1bfb5;border-radius:9999px;width:36px;height:36px;font-size:20px;line-height:1;cursor:pointer;color:#5f5e5e;z-index:2;">×</button>
+            <div id="tm-site-modal-body" style="width:100%;min-height:200px;">
+                <div style="padding:48px;text-align:center;color:#5f5e5e;">Loading…</div>
+            </div>
+        </div>
     </div>
     <script>
         // ============ I18N ============
@@ -649,6 +663,8 @@
                 'checkout.banner_pending': 'Payment in progress — finish in the new tab.',
                 'checkout.banner_paid': 'Payment received ✓ — check your email for the redemption code.',
                 'checkout.banner_failed': 'Payment failed or timed out. Contact billing@api-tokenmaster.com if you were charged.',
+                'site.modal_loading': 'Loading…',
+                'site.modal_error': 'Could not load this page. Please try again.',
                 'checkout.need_signin': 'Please sign in or create a free TokenMaster account first.',
                 'checkout.need_signin_hint': 'We need a verified account to deliver your tokens.',
                 'checkout.signed_in_as': 'Signed in as',
@@ -770,6 +786,8 @@
                 'checkout.banner_pending': '支付进行中 — 请在新标签页完成支付。',
                 'checkout.banner_paid': '支付完成 ✓ — 请查收邮件获取兑换码。',
                 'checkout.banner_failed': '支付失败或超时。如果您已被扣款,请联系 billing@api-tokenmaster.com。',
+                'site.modal_loading': '正在加载...',
+                'site.modal_error': '加载失败,请重试。',
                 'checkout.need_signin': '请先登录或注册一个免费的 TokenMaster 账号。',
                 'checkout.need_signin_hint': '我们需要一个已验证的账号来给您发放 tokens。',
                 'checkout.signed_in_as': '已登录身份',
@@ -869,6 +887,122 @@
                 }
             });
         });
+
+        // ============ SITE PAGE MODAL (v6.28.9) ============
+        // Footer links with .tm-modal-link open their target in an
+        // overlay modal instead of navigating. We fetch the page via
+        // pay.api-tokenmaster.com/site/* and render in an <iframe
+        // srcdoc> so the inner page's <script> tags run (i18n apply,
+        // lang toggle, etc.) and the user keeps the New API shell
+        // top nav + footer visible behind the modal.
+        (function wireSiteModal() {
+            const overlay = document.getElementById('tm-site-modal');
+            const body = document.getElementById('tm-site-modal-body');
+            const closeBtn = document.getElementById('tm-site-modal-close');
+            if (!overlay || !body || !closeBtn) return;
+
+            function showLoading() {
+                body.innerHTML = '<div style="padding:48px;text-align:center;color:#5f5e5e;">'
+                    + (window.I18N && (document.documentElement.lang || 'en').startsWith('zh')
+                        ? '正在加载...'
+                        : 'Loading…')
+                    + '</div>';
+            }
+            function showError() {
+                body.innerHTML = '<div style="padding:48px;text-align:center;color:#991b1b;">'
+                    + (window.I18N && (document.documentElement.lang || 'en').startsWith('zh')
+                        ? '加载失败,请重试。'
+                        : 'Could not load this page. Please try again.')
+                    + '</div>';
+            }
+
+            function close() {
+                overlay.style.display = 'none';
+                body.innerHTML = '';
+                document.body.style.overflow = '';
+            }
+            closeBtn.addEventListener('click', close);
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) close();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && overlay.style.display !== 'none') close();
+            });
+
+            async function openSiteModal(href) {
+                overlay.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                showLoading();
+                try {
+                    const r = await fetch(href, { credentials: 'omit', cache: 'no-store' });
+                    if (!r.ok) { showError(); return; }
+                    let html = await r.text();
+                    // Compute the absolute base URL so we can rewrite
+                    // relative <a href> inside the page (e.g. contact.html
+                    // → https://pay.api-tokenmaster.com/site/contact.html)
+                    // and relative <img src> (e.g. ../assets/foo.png).
+                    const baseUrl = new URL(href);
+                    const baseOrigin = baseUrl.origin;
+                    const basePath = baseUrl.pathname.replace(/[^/]*$/, '');
+                    // Rewrite href="/..." and src="/..." to absolute URL
+                    // (root-relative paths on pay.api-tokenmaster.com)
+                    html = html.replace(
+                        /(\b(?:href|src)\s*=\s*["'])\/([^"']*)(["'])/gi,
+                        (m, pre, path, post) => pre + baseOrigin + '/' + path + post
+                    );
+                    // Rewrite href="about.html" / src="../assets/x" etc.
+                    html = html.replace(
+                        /(\b(?:href|src)\s*=\s*["'])(?!https?:|\/\/|#|javascript:|mailto:|data:)([^"']*)(["'])/gi,
+                        (m, pre, path, post) => {
+                            if (!path) return m;
+                            // already absolute
+                            if (path.startsWith('http://') || path.startsWith('https://')) return m;
+                            // root-relative
+                            if (path.startsWith('/')) return pre + baseOrigin + path + post;
+                            // path-relative (../foo or foo.html or ./foo)
+                            try {
+                                const abs = new URL(path, baseOrigin + basePath);
+                                return pre + abs.href + post;
+                            } catch (_) { return m; }
+                        }
+                    );
+                    // Strip the page's own <header><nav> — we keep the
+                    // shell's nav visible behind the modal, so the
+                    // embedded nav would only add visual noise.
+                    // (We already removed the nav via v6.28.7, but
+                    // this stays as a defensive guard in case someone
+                    // re-adds it.)
+                    html = html.replace(/<header[\s\S]*?<\/header>/gi, '');
+                    // Force the page to take the modal width + our font stack
+                    html = html.replace(
+                        /<body([^>]*)>/i,
+                        '<body$1 style="margin:0;padding:0;background:transparent;font-family:Inter,-apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,Microsoft YaHei,sans-serif;">'
+                    );
+                    // Make the inner <main> fit the modal card (no
+                    // extra top padding, since the card itself adds
+                    // some; original site pages set padding-top:96px
+                    // which makes the H1 sit too far down here).
+                    html = html.replace(
+                        /<main([^>]*)>/i,
+                        '<main$1 style="padding:32px 32px 48px 32px;">'
+                    );
+                    body.innerHTML = '<iframe srcdoc="'
+                        + html.replace(/"/g, '&quot;')
+                        + '" style="width:100%;min-height:600px;border:0;border-radius:16px;background:transparent;"></iframe>';
+                } catch (e) {
+                    console.error('[tm-site-modal] fetch failed', e);
+                    showError();
+                }
+            }
+
+            document.querySelectorAll('a.tm-modal-link').forEach((a) => {
+                a.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    openSiteModal(a.href);
+                });
+            });
+            console.log('[tm-site-modal] wired', document.querySelectorAll('a.tm-modal-link').length, 'links');
+        })();
 
         // ============ CTA WIRE -> Checkout Modal ============
         (function wireCheckout() {
