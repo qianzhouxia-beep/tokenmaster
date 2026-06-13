@@ -216,13 +216,15 @@ def _paypal_get_access_token() -> str:
     return _paypal_token["access_token"]
 
 
-def _paypal_create_checkout(sku, email):
+def _paypal_create_checkout(sku, email, sku_id="?"):
     token = _paypal_get_access_token()
+    usd_str = f"{sku['usd']:.2f}"
+    log.info("paypal_create_checkout sku_id=%s usd=%s label=%s", sku_id, usd_str, sku.get("label","?"))
     payload = {
         "intent": "CAPTURE",
         "purchase_units": [
             {
-                "amount": {"currency_code": "USD", "value": f"{sku['usd']:.2f}"},
+                "amount": {"currency_code": "USD", "value": usd_str},
                 "description": sku["label"],
                 "custom_id": email,
             }
@@ -328,7 +330,7 @@ def create_order(payload: CreateOrderIn) -> CreateOrderOut:
 
     try:
         if method == "paypal":
-            pp_id, pp_url = _paypal_create_checkout(sku, payload.email)
+            pp_id, pp_url = _paypal_create_checkout(sku, payload.email, payload.sku_id)
             db.attach_provider_id(temp_order["id"], "paypal", pp_id)
             return CreateOrderOut(
                 order_id=temp_order["id"],
@@ -406,7 +408,7 @@ def checkout_redirect(
     temp_order = db.create_order(email, sku_id, method, newapi_username=newapi_username)
     try:
         if method == "paypal":
-            pp_id, pp_url = _paypal_create_checkout(sku, email)
+            pp_id, pp_url = _paypal_create_checkout(sku, email, sku_id)
             db.attach_provider_id(temp_order["id"], "paypal", pp_id)
         else:
             np_id, np_url = _nowpayments_create_payment(sku, email, temp_order["id"])
