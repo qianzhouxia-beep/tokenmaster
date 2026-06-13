@@ -197,7 +197,7 @@ def _send_code_email(email: str, sku: str, code: str) -> None:
 
     try:
         if port == 465:
-            # SSL
+            # SSL (typical for smtp.larksuite.com, smtp.gmail.com alt, etc.)
             ctx = ssl.create_default_context()
             with smtplib.SMTP_SSL(host, port, timeout=10, context=ctx) as s:
                 s.login(user, password)
@@ -211,7 +211,16 @@ def _send_code_email(email: str, sku: str, code: str) -> None:
                     s.ehlo()
                 s.login(user, password)
                 s.send_message(msg)
-        log.info("email sent: to=%s code=%s*** sku=$%s", email, code[:8], sku)
+        log.info("email sent: to=%s code=%s*** sku=$%s via %s:%d", email, code[:8], sku, host, port)
+    except smtplib.SMTPAuthenticationError as e:
+        # Most common Lark/Gmail/QQ error: wrong password. App-password
+        # required for IMAP/SMTP, NOT the user's login password.
+        log.error(
+            "email SMTP AUTH FAILED for to=%s code=%s host=%s:%d. "
+            "If using Lark/Gmail/QQ, SMTP_PASSWORD must be the application-specific "
+            "password (not the login password). err=%s",
+            email, code[:8], host, port, e,
+        )
     except Exception as e:
         # Don't fail the whole redemption just because email failed. The
         # code is already minted and saved in DB; the operator can re-send
