@@ -1027,7 +1027,11 @@
                 const POLL_MS = 2000;   // re-check every 2s when blocked
 
                 function render(state) {
-                    // state: 'loading' | 'A' | 'B' | 'C'
+                    // v6.28.4: 简化。New-Api-User header modal 拿不到,
+                    // 既然 auto-detect 走不通,直接让用户自己填邮箱。
+                    // 红框/蓝条/C 提示全去掉,只留个浅蓝小提示"如果您已
+                    // 在 New API 登录,这里填同样的邮箱,token 会发到这个邮箱"。
+                    // 取消 setInterval / polling / 401 检测。
                     if (state === 'loading') {
                         loadingEl.style.display = 'block';
                         formEl.style.display = 'none';
@@ -1035,14 +1039,10 @@
                     }
                     loadingEl.style.display = 'none';
                     formEl.style.display = 'flex';
-                    // v6.28.3: stop polling once we reach A (happy path)
-                    if (state === 'A') {
-                        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-                        pollingEl.style.display = 'none';
-                    } else {
-                        pollingEl.style.display = 'block';
-                    }
+                    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+                    pollingEl.style.display = 'none';
                     if (state === 'A' && tmUser) {
+                        // 已登且有 email → 预填 + 锁住 (跟原来一样)
                         sessionRow.style.display = 'block';
                         sessionText.textContent = signedInAs + ' ' + (tmUser.username || '') + ' · ' + (tmUser.email || '');
                         blockerEl.style.display = 'none';
@@ -1050,71 +1050,42 @@
                         emailInput.readOnly = true;
                         emailInput.style.background = '#f9fafb';
                         emailInput.style.color = '#374151';
-                        submitBtn.disabled = false;
-                        submitBtn.style.opacity = '1';
-                        submitBtn.style.cursor = 'pointer';
-                    } else if (state === 'B') {
+                    } else {
+                        // B / C / 检测失败 → 浅蓝小提示 + email 框可填
                         sessionRow.style.display = 'none';
                         blockerEl.style.display = 'block';
-                        blockerTitle.textContent = needSignin;
-                        blockerHint.textContent = needSigninHint;
-                        // v6.28.3: drop the "Sign in" link — the New API SPA
-                        // doesn't expose /login as a direct route (404), and
-                        // users always reach the login form from the homepage.
-                        // For a fresh checkout the only path that makes sense
-                        // is "Create account", which we keep.
-                        blockerActions.innerHTML =
-                            '<a href="https://api-tokenmaster.com/" target="_blank" rel="noopener noreferrer" ' +
-                            'style="background:#FF6B35;color:white;text-decoration:none;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;">' +
-                            signupLink + '</a>';
+                        blockerEl.style.background = '#eff6ff';
+                        blockerEl.style.borderColor = '#bfdbfe';
+                        blockerEl.style.color = '#0c4a6e';
+                        blockerTitle.textContent = 'Use the same email as your TokenMaster account';
+                        blockerTitle.style.color = '#0c4a6e';
+                        blockerHint.textContent = 'Tokens will be delivered to this email after payment.';
+                        blockerHint.style.color = '#0369a1';
+                        blockerActions.innerHTML = '';
                         emailInput.value = '';
-                        emailInput.readOnly = true;
-                        emailInput.placeholder = needSigninHint;
-                        submitBtn.disabled = true;
-                        submitBtn.style.opacity = '0.5';
-                        submitBtn.style.cursor = 'not-allowed';
-                    } else if (state === 'C' && tmUser) {
-                        sessionRow.style.display = 'block';
-                        sessionText.textContent = signedInAs + ' ' + (tmUser.username || '');
-                        blockerEl.style.display = 'block';
-                        blockerTitle.textContent = needEmail;
-                        blockerHint.textContent = needEmailHint;
-                        // v6.28.3: New API has no /profile route; the user
-                        // settings live under /console/personal. Send them
-                        // there to add an email.
-                        blockerActions.innerHTML =
-                            '<a href="https://api-tokenmaster.com/console/personal" target="_blank" rel="noopener noreferrer" ' +
-                            'style="background:#FF6B35;color:white;text-decoration:none;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;">' +
-                            addEmailLink + '</a>';
-                        emailInput.value = '';
-                        emailInput.readOnly = true;
-                        emailInput.placeholder = needEmailHint;
-                        submitBtn.disabled = true;
-                        submitBtn.style.opacity = '0.5';
-                        submitBtn.style.cursor = 'not-allowed';
+                        emailInput.readOnly = false;
+                        emailInput.placeholder = emailPh;
+                        emailInput.style.background = 'white';
+                        emailInput.style.color = '#1a1a1a';
                     }
+                    // v6.28.4: 按钮永远不灰 — 任何时候点都会跳支付页
+                    submitBtn.disabled = false;
+                    submitBtn.style.opacity = '1';
+                    submitBtn.style.cursor = 'pointer';
                 }
 
                 async function checkSession() {
+                    // v6.28.4: try the auto-detect for the happy path (A);
+                    // any failure (B / C / 401) → just let the user type.
+                    // We don't block on it, don't poll, and don't show a
+                    // red blocker.
                     render('loading');
                     tmUser = await _tmFetchSelf();
-                    if (!tmUser) { render('B'); startPolling(); }
-                    else if (!tmUser.email || !String(tmUser.email).trim()) { render('C'); startPolling(); }
-                    else render('A');
-                }
-
-                // v6.28.3: when the modal is open in B or C, poll /api/user/self
-                // every 2s so that the moment the user finishes signing up or
-                // adding an email in another tab, the modal flips to A without
-                // any "I'm done" click. Stops as soon as we hit A.
-                function startPolling() {
-                    if (pollTimer) return;
-                    pollTimer = setInterval(async () => {
-                        tmUser = await _tmFetchSelf();
-                        if (tmUser && tmUser.email && String(tmUser.email).trim()) {
-                            render('A');
-                        }
-                    }, POLL_MS);
+                    if (tmUser && tmUser.email && String(tmUser.email).trim()) {
+                        render('A');
+                    } else {
+                        render('B');
+                    }
                 }
 
                 formEl.onsubmit = async (e) => {
