@@ -822,20 +822,33 @@ def _grant_quota_via_admin_api(order: dict) -> str | None:
         if not user_id:
             log.error("c-path: no New API user for email=%s (order %s)", email, order["id"])
             return None
-        # Step 2: PUT quota delta
-        pr = requests.put(
-            f"{NEW_API_BASE_URL}/api/user/self/?id={user_id}",
+        # Step 2: grant quota via New API v1.0.0-rc.11 admin endpoint
+        # POST /api/user/manage with {id, action:"add_quota", mode:"add", value}
+        # (the old v6 PUT /api/user/self/?id={id} {"quota":...} endpoint was
+        # removed when New API upgraded to rc.11).
+        pr = requests.post(
+            f"{NEW_API_BASE_URL}/api/user/manage",
             headers=_newapi_headers(),
-            json={"quota": quota_to_add},
+            json={
+                "id": user_id,
+                "action": "add_quota",
+                "mode": "add",
+                "value": quota_to_add,
+            },
             timeout=15,
         )
         if pr.status_code == 401:
-            log.warning("c-path quota PUT 401, refreshing session and retrying")
+            log.warning("c-path quota manage 401, refreshing session and retrying")
             _newapi_get_session(force_refresh=True)
-            pr = requests.put(
-                f"{NEW_API_BASE_URL}/api/user/self/?id={user_id}",
+            pr = requests.post(
+                f"{NEW_API_BASE_URL}/api/user/manage",
                 headers=_newapi_headers(),
-                json={"quota": quota_to_add},
+                json={
+                    "id": user_id,
+                    "action": "add_quota",
+                    "mode": "add",
+                    "value": quota_to_add,
+                },
                 timeout=15,
             )
         pr.raise_for_status()
