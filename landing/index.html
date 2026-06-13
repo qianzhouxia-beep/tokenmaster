@@ -772,7 +772,49 @@
             if (lbl) lbl.textContent = lang === 'zh' ? '中' : 'EN';
         }
 
-        // ============ SCROLL SPY ============
+        // ============ MANUAL LANG TOGGLE (v6.24) ============
+        // v6.9 dropped the floating toggle button because cross-origin
+        // localStorage made it look broken (couldn't see host's i18nextLng).
+        // But same-origin via Cloudflare reverse proxy actually does share
+        // localStorage IF the iframe is hosted under api-tokenmaster.com/landing/
+        // (NOT pay.api-tokenmaster.com/landing/). The browser-test showed the
+        // polling code in v6.7-v6.12 is correct, but the user (qian) needs
+        // a manual override they can SEE for the "I switched host lang and
+        // the iframe didn't follow" complaint.
+        //
+        // Re-add a small fixed bottom-right floating button that toggles
+        // between EN <-> ZH, writes tm_lang override, and calls applyLang.
+        (function mountLangToggle() {
+            const btn = document.createElement('button');
+            btn.id = 'lang-toggle-label';
+            btn.type = 'button';
+            btn.setAttribute('aria-label', 'Toggle language');
+            btn.style.cssText = [
+                'position: fixed',
+                'right: 16px',
+                'bottom: 16px',
+                'z-index: 9999',
+                'padding: 8px 12px',
+                'border-radius: 9999px',
+                'border: 1px solid rgba(0,0,0,0.12)',
+                'background: rgba(255,255,255,0.95)',
+                'color: #111',
+                'font-size: 14px',
+                'font-weight: 600',
+                'cursor: pointer',
+                'box-shadow: 0 4px 12px rgba(0,0,0,0.08)',
+                'user-select: none'
+            ].join(';');
+            btn.onclick = () => {
+                const next = current() === 'zh' ? 'en' : 'zh';
+                try { localStorage.setItem('tm_lang', next); } catch (e) {}
+                try { applyLang(next); } catch (e) { console.error('[lang toggle] applyLang error:', e); }
+            };
+            document.body.appendChild(btn);
+            // initial label
+            try { applyLang(readLang()); } catch (e) {}
+        })();
+
         window.addEventListener('scroll', () => {
             const sections = ['features', 'pricing', 'faq'];
             const navLinks = document.querySelectorAll('header nav div.hidden a');
@@ -897,38 +939,52 @@
                     // CSP, ad-blocker. Server creates the order and 302-redirects
                     // the iframe to PayPal/NOWPayments. No preflight, no JSON body.
                     //
-                    // v6.22 first attempt: top.location.href — FAILED cross-origin
-                    // because the parent is api-tokenmaster.com and the iframe is
-                    // pay.api-tokenmaster.com, and a cross-origin child cannot
-                    // assign to top.location. The catch fallback to
-                    // window.location.href then loads the 302 in the iframe slot,
-                    // and the browser then replaces the parent tab with the 302
-                    // target (sandbox.paypal.com) — PayPal's frame-ancestors header
-                    // refuses to be framed, so the user sees "Refused to connect"
-                    // on what looks like the New API page.
+                    // v6.22 / v6.23 attempts: top.location.href and
+                    // form.submit(target=_top) both silently failed in the
+                    // New API iframe — the form was visibly clicking but the
+                    // 302 never reached the user. Most likely the parent New
+                    // API page CSP / sandbox attribute silently drops the
+                    // navigation, or browser treats it as a no-op for a
+                    // cross-origin GET into a third-party (PayPal) host.
                     //
-                    // v6.23 FIX: build a real <form> with target="_top" and submit
-                    // it. The browser allows a form submission to escape a
-                    // cross-origin iframe parent, so the 302 lands in a real
-                    // top-level tab. No JS cross-origin write needed.
+                    // v6.24 FIX: build a real <a> link with target="_top" and
+                    // programmatically click it. The click on an <a> with a
+                    // target attribute is the most permissive cross-frame
+                    // navigation primitive — Chrome/Firefox/Safari all honor
+                    // it even from a sandboxed iframe when the iframe is
+                    // same-origin as the link destination. We point the link
+                    // at the same pay.api-tokenmaster.com origin so the
+                    // browser sees a same-origin nav, then the server 302s
+                    // to PayPal in the top window (no longer inside any
+                    // iframe). Fallback chain: click <a> → window.open →
+                    // window.location (worst case replaces the iframe slot).
                     const params = new URLSearchParams({
                         sku_id: sku,
                         email: email,
                         payment_method: method,
                     });
-                    const form = document.createElement('form');
-                    form.method = 'GET';
-                    form.action = 'https://pay.api-tokenmaster.com/checkout/redirect';
-                    form.target = '_top';
-                    for (const [k, v] of params.entries()) {
-                        const input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.name = k;
-                        input.value = v;
-                        form.appendChild(input);
+                    const payUrl = 'https://pay.api-tokenmaster.com/checkout/redirect?' + params.toString();
+                    const a = document.createElement('a');
+                    a.href = payUrl;
+                    a.target = '_top';
+                    a.rel = 'noopener';
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    let clicked = false;
+                    try {
+                        a.click();
+                        clicked = true;
+                    } catch (_) { clicked = false; }
+                    if (!clicked) {
+                        // Fallback: window.open with _top target — allowed in
+                        // most browsers even from a sandboxed iframe.
+                        try { window.open(payUrl, '_top'); clicked = true; } catch (_) {}
                     }
-                    document.body.appendChild(form);
-                    form.submit();
+                    if (!clicked) {
+                        // Last resort: replace the iframe slot (best we can do
+                        // if both <a> and window.open are blocked).
+                        window.location.href = payUrl;
+                    }
                 };
             }
         })();
