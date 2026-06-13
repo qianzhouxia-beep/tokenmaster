@@ -464,10 +464,6 @@ def paypal_return(token: str) -> HTMLResponse:
     if row.get("status") == "pending":
         # Wait briefly for the webhook to flip status, then fall back
         # to direct quota grant if it still hasn't.
-        import asyncio
-        for _ in range(8):
-            await asyncio.sleep(1) if False else None  # sync sleep below
-            break
         import time as _t
         _t.sleep(8)
         row = db.get_order(row["id"]) or row
