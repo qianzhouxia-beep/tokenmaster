@@ -939,25 +939,23 @@
                     // CSP, ad-blocker. Server creates the order and 302-redirects
                     // the iframe to PayPal/NOWPayments. No preflight, no JSON body.
                     //
-                    // v6.22 / v6.23 attempts: top.location.href and
-                    // form.submit(target=_top) both silently failed in the
-                    // New API iframe — the form was visibly clicking but the
-                    // 302 never reached the user. Most likely the parent New
-                    // API page CSP / sandbox attribute silently drops the
-                    // navigation, or browser treats it as a no-op for a
-                    // cross-origin GET into a third-party (PayPal) host.
+                    // v6.22 / v6.23 / v6.24 attempts: top.location.href,
+                    // form.submit(target=_top), and <a target=_top> all
+                    // *escaped the iframe* but stayed in the same tab. The
+                    // user (qian) saw: "I clicked Pay in the New API page
+                    // and it replaced my New API tab with PayPal." That's
+                    // technically an escape, but the user expectation is:
+                    // PayPal opens in a NEW tab; the New API page stays
+                    // where it is.
                     //
-                    // v6.24 FIX: build a real <a> link with target="_top" and
-                    // programmatically click it. The click on an <a> with a
-                    // target attribute is the most permissive cross-frame
-                    // navigation primitive — Chrome/Firefox/Safari all honor
-                    // it even from a sandboxed iframe when the iframe is
-                    // same-origin as the link destination. We point the link
-                    // at the same pay.api-tokenmaster.com origin so the
-                    // browser sees a same-origin nav, then the server 302s
-                    // to PayPal in the top window (no longer inside any
-                    // iframe). Fallback chain: click <a> → window.open →
-                    // window.location (worst case replaces the iframe slot).
+                    // v6.26 FIX: use target="_blank" so the browser opens
+                    // PayPal in a brand-new tab. We disable the parent
+                    // page's referrer leak with rel="noopener noreferrer"
+                    // and use window.open(url, '_blank') as a programmatic
+                    // fallback (some browsers still block unrequested
+                    // popups from inside a sandboxed iframe, so we
+                    // synthesize a click on a real <a target=_blank>
+                    // first, which is the most permissive primitive).
                     const params = new URLSearchParams({
                         sku_id: sku,
                         email: email,
@@ -966,19 +964,22 @@
                     const payUrl = 'https://pay.api-tokenmaster.com/checkout/redirect?' + params.toString();
                     const a = document.createElement('a');
                     a.href = payUrl;
-                    a.target = '_top';
-                    a.rel = 'noopener';
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
                     a.style.display = 'none';
                     document.body.appendChild(a);
-                    let clicked = false;
+                    let opened = false;
                     try {
                         a.click();
-                        clicked = true;
-                    } catch (_) { clicked = false; }
-                    if (!clicked) {
-                        // Fallback: window.open with _top target — allowed in
-                        // most browsers even from a sandboxed iframe.
-                        try { window.open(payUrl, '_top'); clicked = true; } catch (_) {}
+                        opened = true;
+                    } catch (_) { opened = false; }
+                    if (!opened) {
+                        try { const w = window.open(payUrl, '_blank'); opened = !!w; } catch (_) {}
+                    }
+                    if (!opened) {
+                        // Last resort: replace the iframe slot (better than
+                        // nothing if the browser blocks the new tab too).
+                        window.location.href = payUrl;
                     }
                     if (!clicked) {
                         // Last resort: replace the iframe slot (best we can do
