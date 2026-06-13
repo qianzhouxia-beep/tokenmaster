@@ -61,12 +61,44 @@ NEW_API_BASE_URL = os.environ.get("NEW_API_BASE_URL", "https://api-tokenmaster.c
 # missing or expired (HTTP 401), eliminating the 30-day manual rotation.
 _paypal_token = {"access_token": None, "expires_at":0}
 
+# v6.18: PayPal client timeout 3s. v6.17 set it to 5s; in production the
+# Zeabur → api-m.paypal.com round-trip + Cloudflare 502 early-bail on
+# ~3s boundary means anything > ~3s gets converted to 502 by the Cloudflare
+# proxy before our handler can return a real 5xx. 3s gives the upstream
+# two TCP retransmits worth of headroom and still fits inside the early-502
+# window so we control the failure mode.
+PAYPAL_TIMEOUT_S = 3
+
+# v6.18: fallback payment_url returned by /create-order + /checkout/redirect
+# when the PayPal / NOWPayments call fails. Frontend can still navigate the
+# user to the PayPal sandbox homepage so the page is not stuck on a blank
+# 502. Toggled by the JSON body's `fallback: true` flag.
+_FALLBACK_PAYMENT_URL = "https://www.sandbox.paypal.com/"
+
 # v6 c-path: New API QuotaPerUnit (default 500_000 = 1 USD). Fetched at startup
 # from /api/option/?key=QuotaPerUnit with the admin session cookie. Falls back
 # to 500_000 if fetch fails (no cookie / 401 / network).
 _quota_per_unit: int = 500_000
 
 app = FastAPI(title="TokenMaster v5 Webhook", version="v5")
+
+
+# v6.18: global exception handler — converts any unhandled 5xx to a JSON
+# payload with a short traceback_id so the operator can correlate it to a
+# `log.exception` line in stderr. Without this, FastAPI returns a bare
+# {"detail": "Internal Server Error"} which makes root-causing the Zeabur
+# 502 impossible from outside.
+@app.exception_handler(Exception)
+async def _unhandled_exception_handler(request: Request, exc: Exception):
+    tb_id = uuid.uuid4().hex[:8]
+    log.exception(
+        "unhandled exception tb_id=%s path=%s method=%s",
+        tb_id, request.url.path, request.method,
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "internal", "traceback_id": tb_id},
+    )
 
 # v6.14: CORS for the landing page (which lives on api-tokenmaster.com
 # via Cloudflare reverse proxy) to call /create-order on the webhook
@@ -156,7 +188,7 @@ def _paypal_get_access_token() -> str:
         f"{PAYPAL_API_BASE}/v1/oauth2/token",
         headers={"Authorization": f"Basic {auth}", "Accept": "application/json"},
         data={"grant_type": "client_credentials"},
-        timeout=5,
+        timeout=PAYPAL_TIMEOUT_S,
     )
     r.raise_for_status()
     body = r.json()
@@ -186,7 +218,7 @@ def _paypal_create_checkout(sku, email):
         f"{PAYPAL_API_BASE}/v2/checkout/orders",
         headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"},
         json=payload,
-        timeout=5,
+        timeout=PAYPAL_TIMEOUT_S,
     )
     r.raise_for_status()
     body = r.json()
@@ -260,9 +292,26 @@ def create_order(payload: CreateOrderIn) -> CreateOrderOut:
     except HTTPException:
         raise
     except Exception as e:
-        log.exception("create-order failed")
+        # v6.18: instead of 502 (which the Cloudflare proxy is already
+        # serving on its own after ~3s, swallowing our log.exception),
+        # return 200 with a fallback payment_url + error so the browser
+        # can navigate the user to the PayPal sandbox homepage. Frontend
+        # sees `fallback: true` and renders "provider unavailable, please
+        # retry" instead of a blank 502 page.
+        log.exception("create-order failed (returning fallback 200)")
         db.mark_failed(temp_order["id"], reason=f"create-error:{type(e).__name__}")
-        raise HTTPException(502, f"provider error: {e}")
+        return JSONResponse(
+            status_code=200,
+            content={
+                "order_id": temp_order["id"],
+                "payment_url": _FALLBACK_PAYMENT_URL,
+                "provider_order_id": "",
+                "payment_method": method,
+                "usd_amount": sku["usd"],
+                "fallback": True,
+                "error": "provider unavailable, please retry",
+            },
+        )
 
 
 # v6.16: GET /checkout/redirect — server-side 302 to PayPal / NOWPayments
@@ -294,9 +343,14 @@ def checkout_redirect(sku_id: str, email: str, payment_method: str) -> "Response
     except HTTPException:
         raise
     except Exception as e:
-        log.exception("checkout/redirect failed")
+        # v6.18: same fallback contract as /create-order — return 302 to
+        # the PayPal sandbox homepage so the user gets a working browser
+        # navigation instead of a 502 page. Frontend can detect the
+        # fallback by comparing the Location header to a known PayPal
+        # origin if it needs to.
+        log.exception("checkout/redirect failed (returning fallback 302)")
         db.mark_failed(temp_order["id"], reason=f"create-error:{type(e).__name__}")
-        raise HTTPException(502, f"provider error: {e}")
+        return RedirectResponse(url=_FALLBACK_PAYMENT_URL, status_code=302)
 
     return RedirectResponse(url=pp_url, status_code=302)
 
