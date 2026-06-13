@@ -897,30 +897,38 @@
                     // CSP, ad-blocker. Server creates the order and 302-redirects
                     // the iframe to PayPal/NOWPayments. No preflight, no JSON body.
                     //
-                    // v6.22 FIX: PayPal sets `frame-ancestors 'self' https://*.paypal.com`
-                    // which means a 302 into PayPal inside an iframe always fails
-                    // (the user sees "Refused to connect"). Detect iframe context and
-                    // escape to the top window with `top.location.href` so the user
-                    // lands on a full PayPal tab instead of a dead iframe page.
+                    // v6.22 first attempt: top.location.href — FAILED cross-origin
+                    // because the parent is api-tokenmaster.com and the iframe is
+                    // pay.api-tokenmaster.com, and a cross-origin child cannot
+                    // assign to top.location. The catch fallback to
+                    // window.location.href then loads the 302 in the iframe slot,
+                    // and the browser then replaces the parent tab with the 302
+                    // target (sandbox.paypal.com) — PayPal's frame-ancestors header
+                    // refuses to be framed, so the user sees "Refused to connect"
+                    // on what looks like the New API page.
+                    //
+                    // v6.23 FIX: build a real <form> with target="_top" and submit
+                    // it. The browser allows a form submission to escape a
+                    // cross-origin iframe parent, so the 302 lands in a real
+                    // top-level tab. No JS cross-origin write needed.
                     const params = new URLSearchParams({
                         sku_id: sku,
                         email: email,
                         payment_method: method,
                     });
-                    const payUrl = 'https://pay.api-tokenmaster.com/checkout/redirect?' + params.toString();
-                    try {
-                        if (window.top && window.top !== window.self) {
-                            // We're inside an iframe — break out so the 302 lands
-                            // in a real top-level tab. PayPal refuses to be framed.
-                            window.top.location.href = payUrl;
-                        } else {
-                            window.location.href = payUrl;
-                        }
-                    } catch (_) {
-                        // Cross-origin top (e.g. browser blocks reading top.location
-                        // when we have no relation). Fall back to a direct nav.
-                        window.location.href = payUrl;
+                    const form = document.createElement('form');
+                    form.method = 'GET';
+                    form.action = 'https://pay.api-tokenmaster.com/checkout/redirect';
+                    form.target = '_top';
+                    for (const [k, v] of params.entries()) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = k;
+                        input.value = v;
+                        form.appendChild(input);
                     }
+                    document.body.appendChild(form);
+                    form.submit();
                 };
             }
         })();
