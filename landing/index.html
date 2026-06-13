@@ -841,6 +841,7 @@
 
         // ============ CTA WIRE -> Checkout Modal ============
         (function wireCheckout() {
+            console.log('[tm-checkout] wireCheckout() starting...');
             const skuMap = {
                 'cta-hero-main': 'starter_v6',
                 'buy-starter': 'starter_v6',
@@ -874,12 +875,14 @@
             }
             Object.entries(skuMap).forEach(([id, sku]) => {
                 const btn = document.getElementById(id);
-                if (!btn) return;
+                if (!btn) { console.warn('[tm-checkout] no button for', id); return; }
                 btn.addEventListener('click', (e) => {
+                    console.log('[tm-checkout] click', id, sku);
                     e.preventDefault();
                     openCheckoutModal(sku);
                 });
             });
+            console.log('[tm-checkout] wireCheckout() done, listeners attached for', Object.keys(skuMap).length, 'buttons');
 
             // v6.28: Session-aware checkout modal. The iframe is loaded under
             // api-tokenmaster.com/landing/ (Cloudflare Worker reverse-proxy) so
@@ -920,6 +923,11 @@
             }
 
             function openCheckoutModal(sku) {
+                try { return _openCheckoutModalImpl(sku); }
+                catch (e) { console.error('[tm-checkout] openCheckoutModal failed:', e); alert('Checkout failed to open: ' + (e && e.message || e)); throw e; }
+            }
+
+            function _openCheckoutModalImpl(sku) {
                 const skuText = skuLabel(sku);
                 const skuUsd = skuPrice[sku] || 0;
                 const titleText = t('checkout.title');
