@@ -453,14 +453,37 @@ def paypal_return(token: str) -> HTMLResponse:
             "If you were charged, please contact billing@api-tokenmaster.com.</p>",
             status_code=200,
         )
-    # v6.33: do NOT mint a redemption code on /paypal-return.
-    # The PayPal webhook (/paypal-webhook) handles fulfillment via the
-    # c-path "grant quota directly to user's New API account" flow
-    # (see _grant_quota_via_admin_api). Minting a code here too
-    # created a duplicate fulfillment path that emailed customers a
-    # redemption code they didn't need (the quota was already in their
-    # account). The /paypal-return page just shows "Payment received"
-    # and waits for the webhook to flip status to 'completed'.
+    # v6.34: c-path is the primary fulfillment (webhook c-path grant
+    # quota to user's New API account, no code needed).
+    # We keep paypal-return as a fallback only when the webhook hasn't
+    # fired in 8s. This protects against the case where PayPal sandbox
+    # doesn't deliver a webhook (delayed/missed) but the user is
+    # already on the return page. The page text also clarifies that
+    # fulfillment is "direct to your New API account" not "code by
+    # email" — that wording was misleading since v6.19.
+    if row.get("status") == "pending":
+        # Wait briefly for the webhook to flip status, then fall back
+        # to direct quota grant if it still hasn't.
+        import asyncio
+        for _ in range(8):
+            await asyncio.sleep(1) if False else None  # sync sleep below
+            break
+        import time as _t
+        _t.sleep(8)
+        row = db.get_order(row["id"]) or row
+        if row.get("status") == "pending":
+            log.warning(
+                "paypal-return: webhook did not fire in 8s for order %s, "
+                "falling back to direct quota grant",
+                row["id"],
+            )
+            marker = _grant_quota_via_admin_api(row)
+            if marker is None:
+                log.error("paypal-return c-path grant failed for %s", row["id"])
+            else:
+                db.mark_paid(row["id"], marker)
+                row = db.get_order(row["id"])
+                log.info("paypal-return c-path grant ok for %s: %s", row["id"], marker)
     return HTMLResponse(
         f"""<!doctype html>
 <html><head><title>TokenMaster - Payment received</title>
@@ -468,30 +491,30 @@ def paypal_return(token: str) -> HTMLResponse:
 <style>body{{font-family:system-ui;max-width:560px;margin:48px auto;padding:0 16px;}}</style>
 </head><body>
 <h1>Payment received ✓</h1>
-<p>Your redemption code is being emailed to you. This page will update when the code is ready.</p>
+<p>Your 20M tokens are being delivered to your New API account. This page will update when ready.</p>
 <p>Order id: <code>{row['id']}</code></p>
-<div id="status">Checking payment status…</div>
+<div id="status">Verifying payment…</div>
 <script>
 async function poll() {{
   for (let i = 0; i < 60; i++) {{
     const r = await fetch('/orders/{row['id']}');
     if (r.ok) {{
       const o = await r.json();
-      // v6.27: db.mark_paid writes status='completed' (matches the
-      // New API redemption code 'completed' state). Polling for 'paid'
-      // never matched, so the spinner stayed on "Checking payment
-      // status..." even when the webhook had already fired and the
-      // code was emailed. Accept both for forward compat.
       if (o.status === 'completed' || o.status === 'paid') {{
         document.getElementById('status').innerHTML =
-          'Paid ✓. Code: <code>' + (o.redeem_code || '(check email)') + '</code>';
+          'Done ✓. Your New API account has been credited 20M tokens. <br>Close this tab and go back to <a href="https://api-tokenmaster.com/">api-tokenmaster.com</a> to use them.';
+        return;
+      }}
+      if (o.status === 'failed') {{
+        document.getElementById('status').innerHTML =
+          'Fulfillment failed. Please contact billing@api-tokenmaster.com if you were charged.';
         return;
       }}
     }}
     await new Promise(r => setTimeout(r, 2000));
   }}
   document.getElementById('status').textContent =
-    'Still waiting for webhook. If you were charged, your code will arrive by email.';
+    'Still waiting. If you were charged, your tokens will appear in your New API account shortly.';
 }}
 poll();
 </script>
