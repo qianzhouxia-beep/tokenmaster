@@ -665,6 +665,7 @@
                 'checkout.banner_failed': 'Payment failed or timed out. Contact billing@api-tokenmaster.com if you were charged.',
                 'checkout.popup_blocked': 'Popup was blocked by your browser.',
                 'checkout.open_paypal': 'Open PayPal →',
+                'checkout.paying': 'Paying…',
                 'site.modal_loading': 'Loading…',
                 'site.modal_error': 'Could not load this page. Please try again.',
                 'checkout.need_signin': 'Please sign in or create a free TokenMaster account first.',
@@ -790,6 +791,7 @@
                 'checkout.banner_failed': '支付失败或超时。如果您已被扣款,请联系 billing@api-tokenmaster.com。',
                 'checkout.popup_blocked': '弹出窗口被浏览器拦截。',
                 'checkout.open_paypal': '打开 PayPal →',
+                'checkout.paying': '正在支付中…',
                 'site.modal_loading': '正在加载...',
                 'site.modal_error': '加载失败,请重试。',
                 'checkout.need_signin': '请先登录或注册一个免费的 TokenMaster 账号。',
@@ -1299,60 +1301,43 @@
                         return;
                     }
 
-                    // Close modal, show banner, open new tab
-                    overlay.remove();
-                    showPaymentBanner('pending', orderId);
+                    // v6.32: Keep modal open — transform button into "paying" state.
+                    // User sees: email (top) + payment method (middle) + "正在支付中" (bottom orange).
+                    // No external banner, no "popup blocked" message, no modal close.
+                    errBox.style.display = 'none';
+                    emailInput.disabled = true;
+                    emailInput.style.background = '#f3f4f6';
+                    emailInput.style.color = '#6b7280';
+                    const methodSelect = formEl.querySelector('select[name=payment_method]');
+                    if (methodSelect) { methodSelect.disabled = true; methodSelect.style.background = '#f3f4f6'; }
 
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = typeof t === 'function' ? t('checkout.paying') : '\u6b63\u5728\u652f\u4ed8\u4e2d…';
+                    submitBtn.style.background = '#d97706';
+
+                    // Open PayPal in a new tab (noopener prevents PayPal hijacking parent)
                     let opened = false;
                     try {
                         const w = window.open(paymentUrl, '_blank', 'noopener,noreferrer');
                         opened = !!w;
                     } catch (_) { opened = false; }
                     if (!opened) {
-                        // v6.31 fix: popup was blocked by the browser (common when window.open
-                        // is called inside an async fetch callback — Chrome treats it as
-                        // non-user-gesture). The old fallback was:
-                        //   window.location.href = paymentUrl
-                        // That navigated the IFRAME to PayPal. PayPal's checkoutnow page then
-                        // executed window.top.location which hijacked the parent (api-tokenmaster.com)
-                        // tab — exactly the "two PayPal pages" bug the user reported.
-                        //
-                        // Fix: instead of auto-navigating, update the banner to show a
-                        // manual "Open PayPal" button. When the USER clicks it, window.open
-                        // is triggered by a direct user gesture and the popup blocker lifts.
-                        // This keeps the iframe on our page and never lets PayPal run in the
-                        // iframe context where it could access window.top.
-                        const el = document.getElementById('tm-pay-banner');
-                        const textEl = document.getElementById('tm-pay-banner-text');
-                        const iconEl = document.getElementById('tm-pay-banner-icon');
-                        if (el && textEl && iconEl) {
-                            el.style.background = '#92400e';
-                            iconEl.textContent = '⚠';
-                            textEl.innerHTML = '';
-                            const msg = document.createTextNode(
-                                (typeof t === 'function' ? t('checkout.popup_blocked') : 'Popup blocked.') + ' '
-                            );
-                            textEl.appendChild(msg);
-                            const btn = document.createElement('a');
-                            btn.href = paymentUrl;
-                            btn.target = '_blank';
-                            btn.rel = 'noopener noreferrer';
-                            btn.textContent = typeof t === 'function' ? t('checkout.open_paypal') : 'Open PayPal →';
-                            btn.style.cssText = 'color:#fde68a;font-weight:600;text-decoration:underline;cursor:pointer;';
-                            textEl.appendChild(btn);
-                            el.style.display = 'block';
-                        }
-                        // Still start polling — if user clicks and pays, banner will update.
+                        // Popup blocked — keep modal in "paying" state silently.
+                        // No error text exposed to user. Modal stays open with
+                        // email + method visible, button shows "\u6b63\u5728\u652f\u4ed8\u4e2d…".
+                        if (window.console) console.warn('[TokenMaster] Popup blocked');
                     }
 
                     // Poll /orders/{id} every 1s, max 90s
                     const POLL_INTERVAL_MS = 1000;
                     const POLL_MAX_MS = 90000;
                     const t0 = Date.now();
-                    const pollTimer = setInterval(async () => {
+                        const pollTimer = setInterval(async () => {
                         if (Date.now() - t0 > POLL_MAX_MS) {
                             clearInterval(pollTimer);
-                            showPaymentBanner('failed', orderId);
+                            // Timeout: show failed state in modal button
+                            submitBtn.style.background = '#991b1b';
+                            submitBtn.textContent = typeof t === 'function' ? t('checkout.banner_failed') : 'Payment timed out';
                             return;
                         }
                         try {
@@ -1362,13 +1347,23 @@
                             });
                             if (!r.ok) return;
                             const o = await r.json();
-                            // backend writes status='completed' on webhook fire
                             if (o.status === 'completed' || o.status === 'paid') {
                                 clearInterval(pollTimer);
-                                showPaymentBanner('paid', orderId);
+                                // Success: show green check in modal button
+                                submitBtn.style.background = '#166534';
+                                submitBtn.textContent = typeof t === 'function'
+                                    ? t('checkout.banner_paid')
+                                    : '\u2705 Payment successful! Tokens delivered.';
+                                errBox.style.display = 'none';
                             } else if (typeof o.status === 'string' && o.status.startsWith('failed:')) {
                                 clearInterval(pollTimer);
-                                showPaymentBanner('failed', orderId);
+                                // Failed: show error in modal
+                                submitBtn.style.background = '#dc2626';
+                                submitBtn.textContent = typeof t === 'function'
+                                    ? t('checkout.banner_failed')
+                                    : '\u271c Payment failed';
+                                errBox.style.display = 'block';
+                                errBox.textContent = (typeof t === 'function' ? t('checkout.error_prefix') : '') + ' ' + o.status;
                             }
                         } catch (_) { /* keep polling on transient errors */ }
                     }, POLL_INTERVAL_MS);
