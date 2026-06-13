@@ -415,6 +415,19 @@ def paypal_return(token: str) -> HTMLResponse:
             "If you were charged, please contact billing@api-tokenmaster.com.</p>",
             status_code=200,
         )
+    # v6.27: if the order is still pending after capture, do the c-path
+    # mint + email right here so the user is not blocked on a slow or
+    # missed webhook. The webhook handler is idempotent (it re-checks
+    # status before doing anything), so when the webhook does fire
+    # later it will just no-op.
+    if row.get("status") == "pending":
+        try:
+            code = redeem.create_redemption(row["sku_id"], row["email"])
+            db.mark_paid(row["id"], code)
+            row = db.get_order(row["id"])
+            log.info("paypal-return c-path minted %s for order %s", code[:8] if code else "<empty>", row["id"])
+        except Exception as e:
+            log.exception("paypal-return c-path mint failed for order %s: %s", row.get("id"), e)
     return HTMLResponse(
         f"""<!doctype html>
 <html><head><title>TokenMaster - Payment received</title>
@@ -431,7 +444,12 @@ async function poll() {{
     const r = await fetch('/orders/{row['id']}');
     if (r.ok) {{
       const o = await r.json();
-      if (o.status === 'paid') {{
+      // v6.27: db.mark_paid writes status='completed' (matches the
+      // New API redemption code 'completed' state). Polling for 'paid'
+      // never matched, so the spinner stayed on "Checking payment
+      // status..." even when the webhook had already fired and the
+      // code was emailed. Accept both for forward compat.
+      if (o.status === 'completed' || o.status === 'paid') {{
         document.getElementById('status').innerHTML =
           'Paid ✓. Code: <code>' + (o.redeem_code || '(check email)') + '</code>';
         return;
